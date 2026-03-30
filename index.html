@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>프로젝트: 최후의 백신</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="effect-overlay" class="pointer-events-none"></div>
+    <div id="celebration-overlay" class="pointer-events-none hidden"></div>
+
+    <div class="game-container" id="main-ui">
+        <div id="intro-screen">
+            <h1 id="hospital-logo">🏥 건국대학교병원 : DNA를 사수하라</h1>
+            <hr>
+            <h2>[ 교육 시뮬레이션 개요 ]</h2>
+            <div class="story-box">
+                <p>▶ <b>목적:</b> 병원의 핵심가치 5가지 내재화 훈련</p>
+                <p>▶ <b>방법:</b> 오프라인 활동을 통해 획득한 '카드'의 단서를 기반으로, 시스템에 정답을 입력하십시오.</p>
+                <p>▶ 총 5개의 보안 구역을 돌파하고 치료제를 확보하면 미션이 완료됩니다.</p>
+            </div>
+            <button onclick="showWorldview()" class="full-btn">시스템 접속 (프롤로그 재생)</button>
+        </div>
+
+        <div id="worldview-screen" class="hidden">
+            <h1 id="hospital-logo">⚠ 시스템 경고: 아포칼립스 프로토콜 ⚠</h1>
+            <hr>
+            <div id="video-container">
+                <video id="prologue-video" playsinline loop muted autoplay preload="auto">
+                    <source src="prologue.mp4" type="video/mp4">
+                </video>
+            </div>
+            <div class="story-box" id="worldview-text">
+                <p>영상을 시청하며 하단의 미션 코드를 입력하십시오.</p>
+            </div>
+            <div class="input-section">
+                <input type="text" id="mission-code-input" placeholder="미션 시작 코드를 입력하세요" autocomplete="off">
+            </div>
+            <p id="mission-error-text" style="text-align: center; font-weight: bold; min-height: 20px; margin-top: 5px;"></p>
+            <button onclick="checkMissionCode()" class="full-btn">미션 시작 (Stage 1 진입)</button>
+        </div>
+
+        <div id="game-screen" class="hidden">
+            <h1 id="hospital-logo" style="font-size: 1.1rem;">🏥 통제 시스템 활성화</h1>
+            <hr>
+            <h2 id="stage-title">로딩 중...</h2>
+            
+            <div class="story-box">
+                <p id="stage-desc">시스템을 불러오는 중입니다.</p>
+            </div>
+
+            <button id="next-mission-btn" class="full-btn" onclick="showMission()">미션 확인 (다음)</button>
+
+            <div class="input-section hidden" id="mission-input-section">
+                <input type="text" id="answer-input" placeholder="보안 코드를 입력하세요" autocomplete="off">
+                <button onclick="checkAnswer()" class="confirm-btn">승인</button>
+                <button class="hint-btn" onclick="showHint()">힌트</button>
+            </div>
+            
+            <p id="message-text"></p>
+            <div id="hint-box" class="hidden"></div>
+        </div>
+    </div>
+
+    <div id="success-popup" class="hidden">
+        <div class="popup-content">
+            <div id="popup-header">✅ 시스템 알림</div>
+            <h2 id="popup-title">보안 승인 완료</h2>
+            <p id="popup-keyword"></p>
+            <hr style="border-color: #eee; margin: 15px 0;">
+            <p id="popup-text"></p>
+            <button onclick="closePopupAndNext()" class="full-btn" style="margin-top: 20px;">다음 구역으로 진입</button>
+        </div>
+    </div>
+
+    <audio id="audio-clear-bgm" loop><source src="clear_bgm.mp3" type="audio/mpeg"></audio>
+    <audio id="audio-clear-effect"><source src="clear_effect.mp3" type="audio/mpeg"></audio>
+
+    <script src="script.js"></script>
+</body>
+</html>
