@@ -1,65 +1,51 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+/* 💡 [V26 핵심] 전체 화면 스크롤 허용 */
 body {
     margin: 0; padding: 0;
     font-family: 'Noto Sans KR', sans-serif;
     background-color: #000;
     background-size: cover; background-position: center; background-attachment: fixed;
-    color: #ffffff; height: 100vh;
+    color: #ffffff;
+    min-height: 100vh; /* 최소 높이 유지 */
     display: flex; align-items: center; justify-content: center;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto; /* 내용 길어지면 스크롤 발생 */
 }
 
+/* 📱 메인 컨테이너 UI (반응형 최적화) */
 .game-container {
-    width: 92%; max-width: 500px; max-height: 94vh;
-    margin: auto; background-color: rgba(13, 17, 23, 0.2) !important; 
-    -webkit-backdrop-filter: blur(15px);
-    backdrop-filter: blur(3px);
+    width: 92%; max-width: 500px;
+    margin: 20px auto; /* 상하 여백 추가하여 짤림 방지 */
+    background-color: rgba(13, 17, 23, 0.2) !important; 
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
     padding: 25px; border-radius: 15px;
     box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
     border: 1px solid rgba(48, 54, 61, 0.5);
     position: relative; z-index: 10;
-    display: flex; flex-direction: column; overflow-y: auto;
+    display: flex; flex-direction: column;
+    min-height: auto; /* 내용만큼 늘어남 */
 }
 
 /* 💡 메인 게임 타이틀 로고 */
-.main-game-title {
-    display: flex; flex-direction: column; align-items: center;
-    margin: 10px 0 20px 0; padding: 0;
-}
+.main-game-title { display: flex; flex-direction: column; align-items: center; margin: 10px 0 20px 0; padding: 0; }
 .title-top {
     font-size: 2.4rem; font-weight: 900;
     background: linear-gradient(to bottom, #ffffff, #aab0b8);
-    -webkit-background-clip: text;
-    background-clip: text;
+    -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
     -webkit-filter: drop-shadow(0 0 8px rgba(88, 166, 255, 0.8));
     filter: drop-shadow(0 0 8px rgba(88, 166, 255, 0.8));
     letter-spacing: -1px; line-height: 1.1;
 }
-.title-bottom {
-    font-size: 0.9rem; font-weight: bold; color: #58a6ff;
-    letter-spacing: 2px; margin-top: 5px; opacity: 0.9;
-}
+.title-bottom { font-size: 0.9rem; font-weight: bold; color: #58a6ff; letter-spacing: 2px; margin-top: 5px; opacity: 0.9; }
 
-/* 💡 [수정] 메인 화면 및 스테이지 타이틀 여백 조정 */
-h1#hospital-logo { 
-    color: #3fb950; 
-    font-size: 1.1rem; 
-    text-align: center; 
-    margin-top: 35px; /* 💡 뒤로가기 버튼과 겹치지 않게 충분한 여백 확보 */
-    margin-bottom: 5px; 
-}
-
-/* 인트로 화면에서는 뒤로가기가 없으므로 타이틀 여백 원래대로 */
+h1#hospital-logo { color: #3fb950; font-size: 1.1rem; text-align: center; margin-top: 35px; margin-bottom: 5px; }
 #intro-screen h1#hospital-logo { margin-top: 0; }
 
-.corona-effect {
-    border: 1px solid rgba(255, 255, 255, 0.8) !important;
-    animation: corona-pulse 4s infinite alternate;
-    background-color: rgba(0, 0, 0, 0.4) !important;
-}
+.corona-effect { border: 1px solid rgba(255, 255, 255, 0.8) !important; animation: corona-pulse 4s infinite alternate; background-color: rgba(0, 0, 0, 0.4) !important; }
 @keyframes corona-pulse {
     0% { box-shadow: 0 0 30px #fff, 0 0 50px #f1e05a, 0 0 70px #ff8c00; }
     100% { box-shadow: 0 0 50px #fff, 0 0 80px #f1e05a, 0 0 120px #ff4500; }
@@ -79,8 +65,7 @@ h1#hospital-logo {
 .golden-glow-animated {
     font-size: 1.8rem; font-weight: bold;
     background: linear-gradient(to bottom, #fff, #f1e05a, #b8860b);
-    -webkit-background-clip: text;
-    background-clip: text;
+    -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
     -webkit-filter: drop-shadow(0 0 10px rgba(241, 224, 90, 0.5));
     filter: drop-shadow(0 0 10px rgba(241, 224, 90, 0.5));
@@ -99,7 +84,7 @@ hr { border: none; border-top: 1px solid #30363d; margin: 12px 0; flex-shrink: 0
 #video-container { width: 65%; margin: 0 auto 15px auto; aspect-ratio: 9 / 16; overflow: hidden; border-radius: 10px; background: #000; border: 1px solid #30363d; flex-shrink: 0; }
 #prologue-video { width: 100%; height: 100%; object-fit: cover; }
 
-.story-box { background-color: rgba(0, 0, 0, 0.4) !important; padding: 18px; border-left: 4px solid #3fb950; margin-bottom: 12px; line-height: 1.7; border-radius: 4px; font-size: 0.95rem; max-height: 50vh; overflow-y: auto; flex-grow: 1; color: #ffffff !important; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); }
+.story-box { background-color: rgba(0, 0, 0, 0.4) !important; padding: 18px; border-left: 4px solid #3fb950; margin-bottom: 12px; line-height: 1.7; border-radius: 4px; font-size: 0.95rem; max-height: none; overflow-y: visible; flex-grow: 1; color: #ffffff !important; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); }
 
 button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: #238636; color: white; font-weight: bold; cursor: pointer; font-size: 1.1rem !important; margin-bottom: 8px; flex-shrink: 0; }
 .input-section { display: flex; gap: 6px; margin-top: 5px; width: 100%; flex-shrink: 0; }
@@ -116,6 +101,7 @@ input[type="text"] { flex: 2; padding: 12px; border-radius: 6px; border: 1px sol
 
 .hidden { display: none !important; }
 
+/* 💡 팝업 스타일 유지 */
 #success-popup, #hint-popup { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .popup-content { background: #fff; color: #222; width: 85%; max-width: 400px; padding: 25px; border-radius: 15px; text-align: center; position: relative; }
 .close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; color: #aaa; cursor: pointer; }

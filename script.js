@@ -52,6 +52,7 @@ function showWorldview() {
     document.body.style.backgroundImage = "url('bg_default.png')";
     const video = document.getElementById('prologue-video');
     video.play().catch(() => { video.muted = true; video.play(); });
+    window.scrollTo(0, 0); // 💡 상단 이동
 }
 
 function checkMissionCode() {
@@ -71,6 +72,9 @@ function checkMissionCode() {
 function startGame() { worldviewScreen.classList.add('hidden'); gameScreen.classList.remove('hidden'); loadStage(); }
 
 function loadStage() {
+    // 💡 새로운 스테이지 로딩 시 스크롤을 맨 위로 올려줍니다.
+    window.scrollTo(0, 0); 
+
     const stage = gameData[currentStageIndex];
     const nextBtn = document.getElementById('next-mission-btn');
     const inputSection = document.getElementById('mission-input-section');
@@ -117,6 +121,7 @@ function loadStage() {
 }
 
 function showMission() {
+    window.scrollTo(0, 0); // 미션 확인 시에도 상단으로
     const stage = gameData[currentStageIndex];
     const nextBtn = document.getElementById('next-mission-btn');
     const inputSection = document.getElementById('mission-input-section');
