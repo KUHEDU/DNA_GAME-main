@@ -38,7 +38,7 @@ body {
 
 .game-container {
     width: 88%; max-width: 500px; margin: auto; 
-    background-color: rgba(13, 17, 23, 0.85); backdrop-filter: blur(10px);
+    background-color: rgba(13, 17, 23, 0.2); backdrop-filter: blur(10px);
     padding: 25px; border-radius: 15px; border: 1px solid #30363d; z-index: 10;
 }
 
@@ -49,7 +49,7 @@ h1, h2 { text-align: center; }
 #hospital-logo { color: #3fb950; font-size: 1.1rem; }
 .stage-subtitle { color: #58a6ff; font-size: 1.6rem; font-weight: bold; display: block; margin-top: 5px; }
 
-.story-box { background-color: rgba(0, 0, 0, 0.1) !important; padding: 20px; border-left: 4px solid #3fb950; margin-bottom: 20px; line-height: 1.7; border-radius: 4px; font-size: 0.95rem; }
+.story-box { background-color: rgba(0, 0, 0, 0.4) !important; padding: 20px; border-left: 4px solid #3fb950; margin-bottom: 20px; line-height: 1.7; border-radius: 4px; font-size: 0.95rem; }
 .story-box.clear-mode {
     background: linear-gradient(135deg, rgba(210, 153, 34, 0.2) 0%, rgba(241, 224, 90, 0.1) 100%) !important;
     border: 3px solid #ffd700 !important; border-radius: 12px; animation: golden-pulse-box 3s infinite;
