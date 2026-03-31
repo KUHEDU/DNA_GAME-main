@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>프로젝트: 최후의 백신</title>
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=24">
 </head>
 <body>
     <div id="effect-overlay" class="pointer-events-none"></div>
@@ -12,54 +12,53 @@
 
     <div class="game-container" id="main-ui">
         <div id="intro-screen">
-            <h1 id="hospital-logo">🏥 건국대학교병원 : DNA를 사수하라</h1>
+            <div class="security-badge">SECURITY LEVEL: TOP SECRET</div>
+            <h1 class="main-game-title">
+                <span class="title-top">건국 DNA</span>
+                <span class="title-bottom">(Doing Now Action!)</span>
+            </h1>
             <hr>
-            <h2>[ 교육 시뮬레이션 개요 ]</h2>
-            <div class="story-box">
-                <p>▶ <b>목적:</b> 병원의 핵심가치 5가지 내재화 훈련</p>
-                <p>▶ <b>방법:</b> 오프라인 활동을 통해 획득한 '카드'의 단서를 기반으로, 시스템에 정답을 입력하십시오.</p>
-                <p>▶ 총 5개의 보안 구역을 돌파하고 치료제를 확보하면 미션이 완료됩니다.</p>
+            <h2 class="intro-subtitle">[ 게임 개요 ]</h2>
+            <div class="story-box intro-box">
+                <p>▶ <b>목적<br>:</b> 원인 모를 팬데믹으로 인해, 혼돈에 빠진 건국대학교병원을 구하라!</p>
+                <p>▶ <b>방법<br>:</b> 오프라인 활동을 통해 획득한 '카드'의 단서를 기반으로, 시스템에 정답을 입력하세요.</p>
+                <p>▶ <b>완료<br>:</b> 총 5개의 모든 미션을 클리어하고, DNA를 완성하면 게임 종료됩니다. </p>
             </div>
-            <button onclick="showWorldview()" class="full-btn">시스템 접속 </button>
+            <button onclick="showWorldview()" class="full-btn pulse-btn">시스템 접속</button>
         </div>
 
         <div id="worldview-screen" class="hidden">
-            <h1 id="hospital-logo">⚠ 시스템 경고: 아포칼립스 프로토콜 ⚠</h1>
+            <h1 class="emergency-alert">⚠️ 시스템 경고: 팬데믹 프로토콜 ⚠️</h1>
             <hr>
             <div id="video-container">
                 <video id="prologue-video" playsinline loop muted autoplay preload="auto">
                     <source src="prologue.mp4" type="video/mp4">
                 </video>
             </div>
-            <div class="story-box" id="worldview-text">
-                <p>영상을 시청하며 하단의 미션 코드를 입력하십시오.</p>
-            </div>
+           
             <div class="input-section">
                 <input type="text" id="mission-code-input" placeholder="미션 시작 코드를 입력하세요" autocomplete="off">
             </div>
-            <p id="mission-error-text" style="text-align: center; font-weight: bold; min-height: 20px; margin-top: 5px;"></p>
-            <button onclick="checkMissionCode()" class="full-btn">미션 시작 </button>
+            <p id="mission-error-text" style="text-align: center; font-weight: bold; min-height: 20px; margin-top: 1px;"></p>
+            <button onclick="checkMissionCode()" class="full-btn">미션 시작</button>
         </div>
 
         <div id="game-screen" class="hidden">
-            <h1 id="hospital-logo" style="font-size: 1.1rem;">🏥 통제 시스템 활성화</h1>
+            <button id="prev-btn" class="hidden" onclick="goBack()">⬅ 뒤로가기</button>
+            
+            <h1 id="hospital-logo" style="font-size: 1.1rem;">🏥 미션팀, 건국DNA를 완성하라! </h1>
             <hr>
             <h2 id="stage-title">로딩 중...</h2>
-            
-            <div class="story-box">
+            <div class="story-box" id="main-story-box">
                 <p id="stage-desc">시스템을 불러오는 중입니다.</p>
             </div>
-
-            <button id="next-mission-btn" class="full-btn" onclick="showMission()"> 다음 미션으로 </button>
-
+            <button id="next-mission-btn" class="full-btn" onclick="showMission()">미션 확인</button>
             <div class="input-section hidden" id="mission-input-section">
-                <input type="text" id="answer-input" placeholder="보안 코드를 입력하세요" autocomplete="off">
+                <input type="text" id="answer-input" placeholder="코드 입력" autocomplete="off">
                 <button onclick="checkAnswer()" class="confirm-btn">승인</button>
                 <button class="hint-btn" onclick="showHint()">힌트</button>
             </div>
-            
             <p id="message-text"></p>
-            <div id="hint-box" class="hidden"></div>
         </div>
     </div>
 
@@ -70,7 +69,17 @@
             <p id="popup-keyword"></p>
             <hr style="border-color: #eee; margin: 15px 0;">
             <p id="popup-text"></p>
-            <button onclick="closePopupAndNext()" class="full-btn" style="margin-top: 20px;">다음 구역으로 진입</button>
+            <button onclick="closePopupAndNext()" class="full-btn" style="margin-top: 20px;">다음으로</button>
+        </div>
+    </div>
+
+    <div id="hint-popup" class="hidden">
+        <div class="popup-content">
+            <span class="close-btn" onclick="closeHint()">&times;</span>
+            <div id="popup-header" style="color: #000; font-size: 1.25rem; margin-top: 10px;">💡 미션 힌트!</div>
+            <hr style="border-color: #eee; margin: 15px 0;">
+            <p id="hint-text" style="color: #444; line-height: 1.6; word-break: keep-all; font-size: 1.05rem;"></p>
+            <button onclick="closeHint()" class="full-btn" style="margin-top: 25px; background: #6e7681;">확인 완료</button>
         </div>
     </div>
 
