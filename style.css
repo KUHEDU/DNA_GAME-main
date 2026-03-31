@@ -49,7 +49,7 @@ h1, h2 { text-align: center; }
 #hospital-logo { color: #3fb950; font-size: 1.1rem; }
 .stage-subtitle { color: #58a6ff; font-size: 1.6rem; font-weight: bold; display: block; margin-top: 5px; }
 
-.story-box { background-color: rgba(0, 0, 0, 0.3); padding: 20px; border-left: 4px solid #3fb950; margin-bottom: 20px; line-height: 1.7; border-radius: 4px; font-size: 0.95rem; }
+.story-box { background-color: rgba(0, 0, 0, 0.15); padding: 20px; border-left: 4px solid #3fb950; margin-bottom: 20px; line-height: 1.7; border-radius: 4px; font-size: 0.95rem; }
 .story-box.clear-mode {
     background: linear-gradient(135deg, rgba(210, 153, 34, 0.2) 0%, rgba(241, 224, 90, 0.1) 100%) !important;
     border: 3px solid #ffd700 !important; border-radius: 12px; animation: golden-pulse-box 3s infinite;
@@ -64,7 +64,7 @@ h1, h2 { text-align: center; }
 .mission-label { color: #58a6ff; font-weight: bold; }
 .mission-label.condition { color: #3fb950; }
 
-button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: #238636; color: white; font-weight: bold; cursor: pointer; }
+button { width: 100%; padding: 14px; border-radius: 8px; border: none; background: #238636; font-size: 1.2rem; color: white; font-weight: bold; cursor: pointer; }
 .input-section { display: flex; gap: 8px; margin-top: 10px; }
 input[type="text"] { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #30363d; background: #0d1117; color: white; }
 
