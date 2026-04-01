@@ -18,6 +18,7 @@ const mainContainer = document.getElementById('main-ui');
 
 let gameData = [];
 let currentStageIndex = 0;
+let noiseAnimId = null; // TV 노이즈 애니메이션 ID
 
 async function fetchGameData() {
     try {
@@ -69,17 +70,96 @@ function checkMissionCode() {
     }
 }
 
-function startGame() { worldviewScreen.classList.add('hidden'); gameScreen.classList.remove('hidden'); loadStage(); }
+function startGame() { worldviewScreen.classList.add('hidden'); loadStage(); }
+
+/* ─────────────────────────────────────────
+   📺 TV 노이즈 인트로 관련 함수
+───────────────────────────────────────── */
+
+// 노이즈 캔버스 렌더링 (매 프레임 랜덤 픽셀)
+function renderNoise(canvas) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+    const imageData = ctx.createImageData(W, H);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+        const v = Math.random() * 255 | 0;
+        data[i]     = v;
+        data[i + 1] = v;
+        data[i + 2] = v;
+        data[i + 3] = 255;
+    }
+    ctx.putImageData(imageData, 0, 0);
+}
+
+// 가로로 흔들리는 글리치 라인 가끔 추가
+function maybeGlitchLine(canvas) {
+    if (Math.random() > 0.85) {
+        const ctx = canvas.getContext('2d');
+        const y = Math.random() * canvas.height | 0;
+        const h = (Math.random() * 6 + 1) | 0;
+        ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.25})`;
+        ctx.fillRect(0, y, canvas.width, h);
+    }
+}
+
+// 스테이지 인트로 실행: 배경 표시 + 5초 노이즈 후 게임화면 등장
+function showStageIntro(stageIndex, callback) {
+    const introEl  = document.getElementById('stage-intro-screen');
+    const canvas   = document.getElementById('noise-canvas');
+
+    // 캔버스 해상도: 성능을 위해 낮은 해상도 사용 (픽셀 늘리기)
+    canvas.width  = 160;
+    canvas.height = 284;
+
+    // 스테이지 배경을 body에 적용 (인트로 화면에서도 보이게)
+    if (stageIndex === gameData.length - 1) {
+        document.body.style.backgroundImage = "url('bg_clear.png')";
+    } else {
+        document.body.style.backgroundImage = `url('bg_stage${stageIndex + 1}.png')`;
+    }
+
+    // 인트로 화면 표시
+    introEl.classList.remove('hidden');
+    introEl.classList.remove('fade-out');
+    introEl.style.opacity = '1';
+
+    // 노이즈 루프 시작
+    if (noiseAnimId) cancelAnimationFrame(noiseAnimId);
+    let frameCount = 0;
+    function noiseLoop() {
+        renderNoise(canvas);
+        if (frameCount % 3 === 0) maybeGlitchLine(canvas); // 3프레임마다 글리치
+        frameCount++;
+        noiseAnimId = requestAnimationFrame(noiseLoop);
+    }
+    noiseLoop();
+
+    // 4.2초 후 페이드아웃 시작 (총 5초 = 4.2s 노이즈 + 0.8s 페이드)
+    setTimeout(() => {
+        introEl.classList.add('fade-out');
+
+        // 페이드아웃 완료 후 노이즈 중단 + 콜백(게임화면 표시)
+        setTimeout(() => {
+            cancelAnimationFrame(noiseAnimId);
+            noiseAnimId = null;
+            introEl.classList.add('hidden');
+            introEl.classList.remove('fade-out');
+            callback();
+        }, 800);
+    }, 4200);
+}
 
 function loadStage() {
-    // 💡 새로운 스테이지 로딩 시 스크롤을 맨 위로 올려줍니다.
-    window.scrollTo(0, 0); 
+    window.scrollTo(0, 0);
 
     const stage = gameData[currentStageIndex];
     const nextBtn = document.getElementById('next-mission-btn');
     const inputSection = document.getElementById('mission-input-section');
     const storyBox = document.querySelector('.story-box');
 
+    // 공통 초기화
     nextBtn.classList.remove('hidden');
     inputSection.classList.add('hidden');
     messageEl.innerText = "";
@@ -89,35 +169,48 @@ function loadStage() {
     successPopup.classList.add('hidden');
     hintPopup.classList.add('hidden');
     mainContainer.classList.remove('corona-effect');
+    storyBox.classList.remove('clear-mode');
 
-    if (currentStageIndex === gameData.length - 1) {
-        titleEl.innerHTML = `<span class="golden-glow-animated">🧬 우리라는 이름의 기적 🧬</span>`;
-        descEl.innerHTML = stage.desc; 
-        nextBtn.classList.add('hidden');
-        inputSection.classList.add('hidden');
-        if (prevBtn) prevBtn.classList.add('hidden');
-        mainContainer.classList.add('corona-effect');
-        storyBox.classList.add('clear-mode');
-        document.body.style.backgroundImage = "url('bg_clear.png')";
-        document.getElementById('audio-clear-bgm').play().catch(()=>{});
-        showCelebrationEffect();
-        return;
-    }
+    // 게임화면 일단 숨기고 노이즈 인트로 실행
+    gameScreen.classList.add('hidden');
 
-    const titleParts = stage.title.split(':');
-    if (titleParts.length > 1) {
-        titleEl.innerHTML = `${titleParts[0]}<br><span class="stage-subtitle">"${titleParts[1].trim()}"</span>`;
-    } else {
-        titleEl.innerHTML = stage.title;
-    }
+    showStageIntro(currentStageIndex, () => {
+        // 노이즈 끝난 뒤 게임화면 표시
+        gameScreen.classList.remove('hidden');
+        gameScreen.classList.remove('fade-in');
+        void gameScreen.offsetWidth; // reflow 강제 (애니메이션 리셋)
+        gameScreen.classList.add('fade-in');
+        window.scrollTo(0, 0);
 
-    descEl.innerHTML = stage.desc; 
-    document.body.style.backgroundImage = `url('bg_stage${currentStageIndex + 1}.png')`;
+        if (currentStageIndex === gameData.length - 1) {
+            titleEl.innerHTML = `<span class="golden-glow-animated">🧬 우리라는 이름의 기적 🧬</span>`;
+            descEl.innerHTML = stage.desc;
+            nextBtn.classList.add('hidden');
+            inputSection.classList.add('hidden');
+            if (prevBtn) prevBtn.classList.add('hidden');
+            mainContainer.classList.add('corona-effect');
+            storyBox.classList.add('clear-mode');
+            document.body.style.backgroundImage = "url('bg_clear.png')";
+            document.getElementById('audio-clear-bgm').play().catch(() => {});
+            showCelebrationEffect();
+            return;
+        }
 
-    if (prevBtn) {
-        if (currentStageIndex === 0) prevBtn.classList.add('hidden');
-        else prevBtn.classList.remove('hidden');
-    }
+        const titleParts = stage.title.split(':');
+        if (titleParts.length > 1) {
+            titleEl.innerHTML = `${titleParts[0]}<br><span class="stage-subtitle">"${titleParts[1].trim()}"</span>`;
+        } else {
+            titleEl.innerHTML = stage.title;
+        }
+
+        descEl.innerHTML = stage.desc;
+        document.body.style.backgroundImage = `url('bg_stage${currentStageIndex + 1}.png')`;
+
+        if (prevBtn) {
+            if (currentStageIndex === 0) prevBtn.classList.add('hidden');
+            else prevBtn.classList.remove('hidden');
+        }
+    });
 }
 
 function showMission() {
