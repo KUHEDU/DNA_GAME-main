@@ -84,20 +84,20 @@ body {
     width: 92%;
     max-width: 480px;
     margin: clamp(16px, 3vh, 32px) auto;
-    /* 반투명 다크 글래스 */
+    /* 반투명 다크 글래스 — 배경이 비치도록 */
     background: linear-gradient(
         160deg,
-        rgba(14, 20, 25, 0.92) 0%,
-        rgba(10, 15, 20, 0.96) 100%
+        rgba(14, 20, 25, 0.55) 0%,
+        rgba(8, 12, 16, 0.65) 100%
     );
-    -webkit-backdrop-filter: blur(20px) saturate(1.4);
-    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.6);
+    backdrop-filter: blur(18px) saturate(1.6);
     border: 1px solid var(--col-border-mid);
     border-top: 1px solid rgba(255,255,255,0.22);
     border-radius: var(--radius-lg);
     box-shadow:
-        0 0 0 1px rgba(0,0,0,0.6),
-        0 8px 32px rgba(0,0,0,0.7),
+        0 0 0 1px rgba(0,0,0,0.4),
+        0 8px 32px rgba(0,0,0,0.5),
         inset 0 1px 0 rgba(255,255,255,0.08);
     padding: var(--padding-card);
     position: relative;
@@ -229,8 +229,8 @@ h2 {
    스토리박스
    ============================================================ */
 .story-box {
-    background: linear-gradient(135deg, rgba(0,230,118,0.06) 0%, rgba(0,0,0,0.35) 100%) !important;
-    border: 1px solid rgba(0,230,118,0.2) !important;
+    background: linear-gradient(135deg, rgba(0,230,118,0.08) 0%, rgba(0,0,0,0.25) 100%) !important;
+    border: 1px solid rgba(0,230,118,0.22) !important;
     border-left: var(--border-left) solid var(--col-green) !important;
     border-radius: var(--radius-md);
     padding: var(--sp-md) var(--sp-lg);
@@ -254,8 +254,8 @@ h2 {
 
 /* 인트로 박스 (빨간 계열) */
 .intro-box {
-    background: linear-gradient(135deg, rgba(255,59,59,0.07) 0%, rgba(0,0,0,0.35) 100%) !important;
-    border-color: rgba(255,59,59,0.25) !important;
+    background: linear-gradient(135deg, rgba(255,59,59,0.08) 0%, rgba(0,0,0,0.22) 100%) !important;
+    border-color: rgba(255,59,59,0.28) !important;
     border-left-color: var(--col-red) !important;
 }
 .intro-box::after {
@@ -264,8 +264,8 @@ h2 {
 
 /* 클리어 모드 */
 .clear-mode {
-    background: linear-gradient(135deg, rgba(255,215,64,0.08) 0%, rgba(0,0,0,0.35) 100%) !important;
-    border-color: rgba(255,215,64,0.25) !important;
+    background: linear-gradient(135deg, rgba(255,215,64,0.09) 0%, rgba(0,0,0,0.22) 100%) !important;
+    border-color: rgba(255,215,64,0.28) !important;
     border-left-color: var(--col-yellow) !important;
     -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
     animation: slideUp 1.2s cubic-bezier(0.22,1,0.36,1);
@@ -423,7 +423,7 @@ input[type="text"]::placeholder {
     background: transparent;
 }
 .mission-part {
-    background: rgba(255,255,255,0.03);
+    background: rgba(255,255,255,0.05);
     border: 1px solid var(--col-border);
     border-radius: var(--radius-md);
     padding: var(--sp-sm) var(--sp-md);
@@ -728,19 +728,24 @@ input[type="text"]::placeholder {
     background: #000;
     overflow: hidden;
     pointer-events: none;
-    display: flex; align-items: center; justify-content: center;
+    display: none;           /* JS가 직접 show/hide 제어 */
+    align-items: center; justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    /* transition은 JS에서 동적으로 설정 */
 }
-#stage-video-overlay.hidden { display: none; }
+/* .hidden 클래스는 더 이상 사용 안 함 — JS가 style.display로 직접 제어 */
 #stage-intro-video {
     width: 100%; height: 100%;
     object-fit: cover;
     display: block;
+    background: #000;
 }
 #stage-video-fade {
     position: absolute; top: 0; left: 0;
     width: 100%; height: 100%;
     background: #000;
-    opacity: 0;
+    opacity: 1;              /* 초기값 1 — 영상 준비 전 검정으로 덮음 */
     pointer-events: none;
     z-index: 2;
 }

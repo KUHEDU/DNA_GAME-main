@@ -1,70 +1,250 @@
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSis_C0X3WkqRuCSpnxDPx0nkZBYnD2EUgyTpPQvAbSG_fTw3yVLjv4eCxyPjHW4xk_4RAWT7Hi_uIu/pub?output=tsv';
 
-const introScreen = document.getElementById('intro-screen');
-const worldviewScreen = document.getElementById('worldview-screen');
-const gameScreen = document.getElementById('game-screen');
-const titleEl = document.getElementById('stage-title');
-const descEl = document.getElementById('stage-desc');
-const inputEl = document.getElementById('answer-input');
-const messageEl = document.getElementById('message-text');
-const successPopup = document.getElementById('success-popup');
-const hintPopup = document.getElementById('hint-popup');
-const hintTextEl = document.getElementById('hint-text');
-const popupKeyword = document.getElementById('popup-keyword');
-const popupText = document.getElementById('popup-text');
-const celebrationOverlay = document.getElementById('celebration-overlay');
-const prevBtn = document.getElementById('prev-btn');
-const mainContainer = document.getElementById('main-ui');
+/* ─── DOM 참조 ─────────────────────────────── */
+const introScreen       = document.getElementById('intro-screen');
+const worldviewScreen   = document.getElementById('worldview-screen');
+const gameScreen        = document.getElementById('game-screen');
+const titleEl           = document.getElementById('stage-title');
+const descEl            = document.getElementById('stage-desc');
+const inputEl           = document.getElementById('answer-input');
+const messageEl         = document.getElementById('message-text');
+const successPopup      = document.getElementById('success-popup');
+const hintPopup         = document.getElementById('hint-popup');
+const hintTextEl        = document.getElementById('hint-text');
+const popupKeyword      = document.getElementById('popup-keyword');
+const popupText         = document.getElementById('popup-text');
+const celebrationOverlay= document.getElementById('celebration-overlay');
+const prevBtn           = document.getElementById('prev-btn');
+const mainContainer     = document.getElementById('main-ui');
 
-let gameData = [];
-let currentStageIndex = 0;
+/* ─── 상태 ──────────────────────────────────── */
+let gameData         = [];
+let currentStageIndex= 0;
+let celebrationTimer = null;
 
-async function fetchGameData() {
-    try {
-        const cacheBuster = `&t=${new Date().getTime()}`;
-        const response = await fetch(SHEET_URL + cacheBuster);
-        const data = await response.text();
-        const rows = data.split('\n');
-        const headers = rows[0].split('\t').map(header => header.trim());
-        gameData = []; 
-        for (let i = 1; i < rows.length; i++) {
-            if (!rows[i].trim()) continue; 
-            const values = rows[i].split('\t');
-            let stageObj = {};
-            for (let j = 0; j < headers.length; j++) {
-                stageObj[headers[j]] = values[j] ? values[j].trim() : "";
+/* ═══════════════════════════════════════════
+   영상 목록
+   ═══════════════════════════════════════════ */
+const VIDEOS = {
+    intro:        'intro_scene.mp4',    // 인트로 화면 → 시스템 접속 후
+    missionEntry: 'mission_entry.mp4',  // intro_scene 종료 후 연속 재생
+    stages:       [
+        'stage1_intro.mp4',
+        'stage2_intro.mp4',
+        'stage3_intro.mp4',
+        'stage4_intro.mp4',
+        'stage5_intro.mp4',
+    ],
+    clear:        'clear_intro.mp4',
+};
+
+/* ═══════════════════════════════════════════
+   영상 오버레이 컨트롤러
+   ─────────────────────────────────────────
+   핵심 원칙:
+   · 오버레이는 절대 display:none(hidden)으로 없애지 않는다.
+     visibility + opacity로만 제어 → 배경 노출 플래시 원천 차단.
+   · 연속 재생(chainPlay)은 오버레이를 유지한 채 src만 교체.
+   · playVideo() 호출 즉시 오버레이가 검정으로 화면 덮음.
+   ═══════════════════════════════════════════ */
+const VideoCtrl = (() => {
+    /* 내부 상태 */
+    let _timers   = [];
+    let _isActive = false;
+
+    const _ov       = () => document.getElementById('stage-video-overlay');
+    const _vid      = () => document.getElementById('stage-intro-video');
+    const _fade     = () => document.getElementById('stage-video-fade');
+    const _glitch   = () => document.getElementById('video-glitch-layer');
+
+    function _clearTimers() {
+        _timers.forEach(t => clearTimeout(t));
+        _timers = [];
+    }
+
+    /* 오버레이 즉시 표시 (검정) — 배경 완전히 덮음 */
+    function _showOverlay() {
+        const ov = _ov();
+        ov.style.transition  = 'none';
+        ov.style.opacity     = '1';
+        ov.style.visibility  = 'visible';
+        ov.style.display     = 'flex';
+    }
+
+    /* 오버레이 페이드아웃 후 숨김 */
+    function _hideOverlay(cb) {
+        const ov   = _ov();
+        const fade = _fade();
+
+        // fade 레이어도 완전 검정으로 유지
+        fade.style.transition = 'none';
+        fade.style.opacity    = '1';
+
+        // 오버레이 자체 페이드아웃
+        ov.style.transition = 'opacity 0.35s ease';
+        ov.style.opacity    = '0';
+
+        _timers.push(setTimeout(() => {
+            ov.style.visibility = 'hidden';
+            ov.style.display    = 'none';
+            fade.style.opacity  = '0';
+            _isActive = false;
+            if (cb) cb();
+        }, 360));
+    }
+
+    /* 단일 영상 재생 내부 로직 */
+    function _play(src, { glitch = false, fadeDuration = 4400, onEnd, _keepOverlay = false } = {}) {
+        const vid      = _vid();
+        const fade     = _fade();
+        const glitchEl = _glitch();
+
+        _clearTimers();
+
+        // 오버레이 검정으로 즉시 덮기
+        _showOverlay();
+
+        // fade 레이어 초기화 (검정, transition 없음)
+        fade.style.transition = 'none';
+        fade.style.opacity    = '0';
+        if (glitchEl) glitchEl.classList.remove('vg-active');
+
+        // 영상 초기화 & 설정
+        vid.pause();
+        vid.removeAttribute('src');
+        vid.load(); // flush
+        vid.muted       = true;
+        vid.autoplay    = false;
+        vid.loop        = false;
+        vid.playsInline = true;
+        vid.src         = src;
+
+        let started = false;
+
+        function startPlayback() {
+            if (started) return;
+            started = true;
+
+            vid.currentTime = 0;
+            // fade 레이어 투명으로 → 영상 보이게
+            fade.style.transition = 'opacity 0.25s ease';
+            fade.style.opacity    = '0';
+
+            vid.play().catch(e => console.warn('[VideoCtrl] play failed:', e));
+
+            // 지직 효과 (스테이지 인트로 전용)
+            if (glitch && glitchEl) {
+                _timers.push(setTimeout(() => _triggerGlitch(glitchEl, 220), 700));
+                _timers.push(setTimeout(() => _triggerGlitch(glitchEl, 200), 3000));
             }
-            gameData.push(stageObj);
+
+            // 페이드아웃 타이머
+            _timers.push(setTimeout(() => {
+                fade.style.transition = 'opacity 0.5s ease';
+                fade.style.opacity    = '1';
+
+                _timers.push(setTimeout(() => {
+                    vid.pause();
+                    vid.removeAttribute('src');
+                    vid.load();
+                    if (glitchEl) glitchEl.classList.remove('vg-active');
+
+                    if (_keepOverlay) {
+                        // 연속 재생용: 오버레이 유지한 채 onEnd 호출
+                        fade.style.transition = 'none';
+                        fade.style.opacity    = '1';
+                        if (onEnd) onEnd();
+                    } else {
+                        // 마지막 영상: 오버레이 페이드아웃 후 숨김
+                        _hideOverlay(onEnd);
+                    }
+                }, 500));
+            }, fadeDuration));
         }
-    } catch (error) { console.error("데이터 연동 실패:", error); }
+
+        // 로딩 완료 대기
+        vid.addEventListener('canplay', function onReady() {
+            vid.removeEventListener('canplay', onReady);
+            startPlayback();
+        }, { once: true });
+
+        vid.load();
+
+        // 이미 캐시된 경우 즉시 시작
+        if (vid.readyState >= 2) {
+            vid.removeEventListener('canplay', function(){});
+            startPlayback();
+        }
+    }
+
+    function _triggerGlitch(el, ms) {
+        el.classList.add('vg-active');
+        setTimeout(() => el.classList.remove('vg-active'), ms);
+    }
+
+    /* ── 공개 API ── */
+    return {
+        /**
+         * 단일 영상 재생
+         * @param {string} src
+         * @param {object} opts  { glitch, fadeDuration, onEnd }
+         */
+        play(src, opts = {}) {
+            _isActive = true;
+            _play(src, { ...opts, _keepOverlay: false });
+        },
+
+        /**
+         * 연속 영상 재생 (오버레이 유지한 채 src만 교체)
+         * @param {Array<{src, glitch, fadeDuration}>} playlist
+         * @param {function} onAllEnd  전체 종료 후 콜백
+         */
+        chain(playlist, onAllEnd) {
+            _isActive = true;
+            let idx = 0;
+
+            function playNext() {
+                if (idx >= playlist.length) {
+                    // 모두 재생 완료 → 오버레이 숨기고 콜백
+                    _hideOverlay(onAllEnd);
+                    return;
+                }
+                const item = playlist[idx++];
+                const isLast = (idx >= playlist.length);
+                _play(item.src, {
+                    glitch:       item.glitch       || false,
+                    fadeDuration: item.fadeDuration  || 4400,
+                    onEnd:        playNext,
+                    _keepOverlay: true,  // 항상 오버레이 유지 (마지막도 chain이 처리)
+                });
+            }
+            playNext();
+        },
+
+        get isActive() { return _isActive; }
+    };
+})();
+
+/* ─── 지직 (외부 노출용) ─── */
+function triggerGlitch(el, ms) {
+    el.classList.add('vg-active');
+    setTimeout(() => el.classList.remove('vg-active'), ms);
 }
 
-// 배경 이미지 preload 유틸 (Promise 반환, 로딩 완료 후 resolve)
+/* ═══════════════════════════════════════════
+   prefetch 유틸 — 배경 이미지 / 다음 영상
+   ═══════════════════════════════════════════ */
 function preloadImage(url) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
         const img = new Image();
-        img.onload = () => resolve(url);
-        img.onerror = () => resolve(url); // 실패해도 진행
+        img.onload = img.onerror = () => resolve(url);
         img.src = url;
     });
 }
 
-// 다음 스테이지 배경 이미지 미리 캐싱 (백그라운드 preload)
-function preloadNextBackground(currentIndex) {
-    const nextIndex = currentIndex + 1;
-    if (nextIndex >= gameData.length) return;
-    const nextUrl = (nextIndex === gameData.length - 1)
-        ? 'bg_clear.webp'
-        : `bg_stage${nextIndex + 1}.webp`;
-    preloadImage(nextUrl); // 결과 무시, 캐시 목적
-}
-
-// 다음 스테이지 영상 미리 fetch (브라우저 캐시에 올려두기)
-function preloadNextVideo(currentIndex) {
-    const nextIndex = currentIndex + 1;
-    if (nextIndex >= gameData.length - 1) return; // 마지막(클리어) 스테이지는 영상 없음
-    const src = STAGE_VIDEOS[nextIndex];
+function prefetchVideo(src) {
     if (!src) return;
+    if (document.querySelector(`link[href="${src}"]`)) return;
     const link = document.createElement('link');
     link.rel  = 'prefetch';
     link.as   = 'video';
@@ -72,261 +252,176 @@ function preloadNextVideo(currentIndex) {
     document.head.appendChild(link);
 }
 
-window.onload = function() {
+function preloadNextAssets(currentIndex) {
+    const nextIndex = currentIndex + 1;
+    if (nextIndex >= gameData.length) return;
+    const isClear = nextIndex === gameData.length - 1;
+    preloadImage(isClear ? 'bg_clear.webp' : `bg_stage${nextIndex + 1}.webp`);
+    if (!isClear) prefetchVideo(VIDEOS.stages[nextIndex]);
+    else          prefetchVideo(VIDEOS.clear);
+}
+
+/* ═══════════════════════════════════════════
+   초기화
+   ═══════════════════════════════════════════ */
+async function fetchGameData() {
+    try {
+        const res  = await fetch(SHEET_URL + `&t=${Date.now()}`);
+        const text = await res.text();
+        const rows = text.split('\n');
+        const headers = rows[0].split('\t').map(h => h.trim());
+        gameData = [];
+        for (let i = 1; i < rows.length; i++) {
+            if (!rows[i].trim()) continue;
+            const vals = rows[i].split('\t');
+            const obj  = {};
+            headers.forEach((h, j) => { obj[h] = vals[j] ? vals[j].trim() : ''; });
+            gameData.push(obj);
+        }
+    } catch (e) { console.error('데이터 연동 실패:', e); }
+}
+
+window.onload = function () {
     document.body.style.backgroundImage = "url('bg_intro.webp')";
-    fetchGameData(); 
+    fetchGameData();
     successPopup.classList.add('hidden');
     hintPopup.classList.add('hidden');
+
+    // 오버레이 초기 상태: 숨김 (투명 + display none)
+    const ov = document.getElementById('stage-video-overlay');
+    ov.style.opacity    = '0';
+    ov.style.visibility = 'hidden';
+    ov.style.display    = 'none';
+
+    // 인트로·미션엔트리 영상 미리 prefetch
+    prefetchVideo(VIDEOS.intro);
+    prefetchVideo(VIDEOS.missionEntry);
 };
 
+/* ═══════════════════════════════════════════
+   ① 인트로 화면 → "시스템 접속" 클릭
+      intro_scene.mp4 (5s) → mission_entry.mp4 (5s) 연속 재생
+      → 월드뷰 화면 표시
+   ═══════════════════════════════════════════ */
 function showWorldview() {
+    // UI 즉시 숨기기 (opacity 0, 오버레이가 덮기 전 노출 방지)
+    mainContainer.style.transition = 'none';
+    mainContainer.style.opacity    = '0';
     introScreen.classList.add('hidden');
-    worldviewScreen.classList.remove('hidden');
-    document.body.style.backgroundImage = "url('bg_default.webp')";
-    const video = document.getElementById('prologue-video');
-    video.play().catch(() => { video.muted = true; video.play(); });
-    window.scrollTo(0, 0); // 💡 상단 이동
-}
 
-function checkMissionCode() {
-    const inputCode = document.getElementById('mission-code-input').value.trim();
-    const requiredCode = gameData[0]?.missionCode?.toString().trim() || "0303";
-    if (inputCode === requiredCode) {
-        document.getElementById('prologue-video').pause();
-        startGame(); 
-    } else {
-        const err = document.getElementById('mission-error-text');
-        err.innerText = "❌ 접근 거부: 코드 오류";
-        err.style.animation = "shake 0.3s";
-        setTimeout(() => err.style.animation = "", 300);
-    }
-}
-
-function startGame() { worldviewScreen.classList.add('hidden'); loadStage(); }
-
-/* ─────────────────────────────────────────
-   🎬 스테이지 인트로: 스테이지별 짧은 영상 재생
-   흐름:
-     배경 preload 완료 → 영상 로딩 → 충분히 버퍼링 후 재생 시작
-     5초 풀 재생 (0.7s / 3.0s 두 번 지직) → 0.6s 검정 페이드 → 콜백
-───────────────────────────────────────── */
-
-const STAGE_VIDEOS = [
-    'stage1_intro.mp4',
-    'stage2_intro.mp4',
-    'stage3_intro.mp4',
-    'stage4_intro.mp4',
-    'stage5_intro.mp4'
-];
-
-function showStageIntro(stageIndex, callback) {
-    const overlay  = document.getElementById('stage-video-overlay');
-    const videoEl  = document.getElementById('stage-intro-video');
-    const fadeEl   = document.getElementById('stage-video-fade');
-    const glitchEl = document.getElementById('video-glitch-layer');
-
-    const videoSrc = STAGE_VIDEOS[stageIndex] || STAGE_VIDEOS[0];
-
-    // ① 초기화
-    fadeEl.style.opacity  = '0';
-    fadeEl.style.transition = 'none';
-    glitchEl.classList.remove('vg-active');
-    overlay.classList.remove('hidden');
-
-    // ② 영상 속성 설정
-    videoEl.muted    = true;
-    videoEl.autoplay = false;
-    videoEl.loop     = false;
-    videoEl.src      = videoSrc;
-
-    // 이전 타이머 정리용
-    let effectTimers = [];
-    function clearEffectTimers() {
-        effectTimers.forEach(t => clearTimeout(t));
-        effectTimers = [];
-    }
-
-    // ③ 5초 재생 + 지직 2회 + 마지막 페이드아웃
-    function startPlayback() {
-        clearEffectTimers();
-        videoEl.currentTime = 0;
-
-        const playPromise = videoEl.play();
-        if (playPromise) playPromise.catch(() => {});
-
-        // 지직 1회: 0.7초
-        effectTimers.push(setTimeout(() => triggerGlitch(glitchEl, 220), 700));
-        // 지직 2회: 3.0초
-        effectTimers.push(setTimeout(() => triggerGlitch(glitchEl, 200), 3000));
-
-        // 4.4초 후 검정 페이드인 (0.6초) → 총 5초
-        effectTimers.push(setTimeout(() => {
-            fadeEl.style.transition = 'opacity 0.6s ease';
-            fadeEl.style.opacity    = '1';
-            effectTimers.push(setTimeout(() => {
-                videoEl.pause();
-                videoEl.src = '';
-                overlay.classList.add('hidden');
-                fadeEl.style.opacity   = '0';
-                fadeEl.style.transition = 'none';
-                glitchEl.classList.remove('vg-active');
-                callback();
-            }, 600));
-        }, 4400));
-    }
-
-    // ④ 로딩 상태 감지 - readyState 3(HAVE_FUTURE_DATA) 이상이면 즉시 재생
-    //    모바일 faststart mp4 기준 보통 0.3~0.8초 내 도달
-    function tryStart() {
-        if (videoEl.readyState >= 3) {
-            startPlayback();
-            return true;
+    // 두 영상 연속 재생 (오버레이 유지)
+    VideoCtrl.chain(
+        [
+            { src: VIDEOS.intro,        glitch: false, fadeDuration: 4400 },
+            { src: VIDEOS.missionEntry, glitch: false, fadeDuration: 4400 },
+        ],
+        () => {
+            // 두 영상 모두 종료 → 월드뷰 화면 전환
+            document.body.style.backgroundImage = "url('bg_default.webp')";
+            worldviewScreen.classList.remove('hidden');
+            mainContainer.style.transition = 'opacity 0.5s ease';
+            mainContainer.style.opacity    = '1';
+            const video = document.getElementById('prologue-video');
+            video.play().catch(() => { video.muted = true; video.play(); });
+            window.scrollTo(0, 0);
         }
-        return false;
-    }
-
-    // ⑤ canplaythrough 이벤트로 대기
-    videoEl.oncanplaythrough = null;
-    videoEl.oncanplay        = null;
-
-    videoEl.addEventListener('canplay', function onReady() {
-        videoEl.removeEventListener('canplay', onReady);
-        startPlayback();
-    }, { once: true });
-
-    videoEl.load();
-
-    // ⑥ load() 직후 이미 버퍼 충분하면 바로 시작 (캐시된 경우)
-    if (tryStart()) {
-        videoEl.removeEventListener('canplay', () => {});
-    }
+    );
 }
 
-// 지직 한 번 번쩍이기
-function triggerGlitch(el, durationMs) {
-    el.classList.add('vg-active');
-    setTimeout(() => el.classList.remove('vg-active'), durationMs);
+/* ═══════════════════════════════════════════
+   ② 미션 코드 입력 → 확인 → 스테이지1 진입
+   ═══════════════════════════════════════════ */
+function checkMissionCode() {
+    const inputCode   = document.getElementById('mission-code-input').value.trim();
+    const requiredCode= gameData[0]?.missionCode?.toString().trim() || '0303';
+
+    if (inputCode !== requiredCode) {
+        const err = document.getElementById('mission-error-text');
+        err.innerText = '❌ 접근 거부: 코드 오류';
+        err.style.animation = 'none';
+        requestAnimationFrame(() => { err.style.animation = 'shake 0.3s'; });
+        setTimeout(() => { err.style.animation = ''; }, 300);
+        return;
+    }
+
+    // 프롤로그 영상 정지, 화면 숨기기
+    document.getElementById('prologue-video').pause();
+    mainContainer.style.transition = 'none';
+    mainContainer.style.opacity    = '0';
+    worldviewScreen.classList.add('hidden');
+
+    startGame();
 }
 
-/* ─────────────────────────────────────────
-   🏆 미션 클리어 전환 효과
-   흐름:
-     0.15s : 황금 플래시 폭발
-     0.4s  : 빛줄기 + 텍스트 팝 등장
-     1.4s  : 오버레이 페이드아웃
-     1.9s  : 오버레이 제거 → 클리어 영상 5초 재생
-     6.9s  : 영상 페이드아웃 → 스토리박스 등장
-───────────────────────────────────────── */
+function startGame() {
+    worldviewScreen.classList.add('hidden');
+    loadStage();
+}
+
+/* ═══════════════════════════════════════════
+   ③ 스테이지 인트로 — stageN_intro.mp4 (5s, 지직 2회)
+   ═══════════════════════════════════════════ */
+function showStageIntro(stageIndex, callback) {
+    VideoCtrl.play(VIDEOS.stages[stageIndex] || VIDEOS.stages[0], {
+        glitch: true,
+        fadeDuration: 4400,
+        onEnd: callback
+    });
+}
+
+/* ═══════════════════════════════════════════
+   ④ 미션 클리어 전환 효과
+      황금빛 플래시(1.9s) → clear_intro.mp4 (5s) → 콜백
+   ═══════════════════════════════════════════ */
 function showClearIntro(stageIndex, callback) {
     const overlay = document.getElementById('clear-intro-overlay');
     overlay.innerHTML = '';
     overlay.classList.remove('hidden', 'ci-fadeout');
     overlay.style.opacity = '';
 
-    // ① 황금 플래시 레이어
-    const flash = document.createElement('div');
-    flash.className = 'ci-flash';
-    overlay.appendChild(flash);
-
-    // ② 빛줄기 방사 레이어
-    const rays = document.createElement('div');
-    rays.className = 'ci-rays';
-    overlay.appendChild(rays);
-
-    // ③ 중앙 텍스트
-    const label = document.createElement('div');
-    label.className = 'ci-label';
+    const flash = document.createElement('div'); flash.className = 'ci-flash';
+    const rays  = document.createElement('div'); rays.className  = 'ci-rays';
+    const label = document.createElement('div'); label.className = 'ci-label';
     label.innerHTML = '🏆<br>MISSION<br>CLEAR';
-    overlay.appendChild(label);
+    const ring  = document.createElement('div'); ring.className  = 'ci-ring';
+    overlay.append(flash, rays, label, ring);
 
-    // ④ 외곽 링 펄스
-    const ring = document.createElement('div');
-    ring.className = 'ci-ring';
-    overlay.appendChild(ring);
-
-    // ⑤ 0.15s: 플래시 폭발
     setTimeout(() => flash.classList.add('ci-flash-burst'), 150);
-
-    // ⑥ 0.4s: 빛줄기 + 텍스트 팝 등장
     setTimeout(() => {
         rays.classList.add('ci-rays-show');
         label.classList.add('ci-label-show');
         ring.classList.add('ci-ring-show');
     }, 400);
-
-    // ⑦ 1.4s: 오버레이 페이드아웃 시작
     setTimeout(() => overlay.classList.add('ci-fadeout'), 1400);
-
-    // ⑧ 1.9s: 오버레이 제거 → 클리어 영상 재생
     setTimeout(() => {
         overlay.classList.add('hidden');
         overlay.classList.remove('ci-fadeout');
         overlay.innerHTML = '';
-        // ⑨ 클리어 영상 5초 재생 후 콜백
-        playClearVideo(callback);
+        // 클리어 영상 재생 (지직 없음)
+        VideoCtrl.play(VIDEOS.clear, {
+            glitch: false,
+            fadeDuration: 4400,
+            onEnd: callback
+        });
     }, 1900);
 }
 
-// 클리어 영상 재생 (지직 없이, 5초 풀재생 후 페이드아웃)
-function playClearVideo(callback) {
-    const overlay = document.getElementById('stage-video-overlay');
-    const videoEl = document.getElementById('stage-intro-video');
-    const fadeEl  = document.getElementById('stage-video-fade');
-
-    fadeEl.style.opacity   = '0';
-    fadeEl.style.transition = 'none';
-    overlay.classList.remove('hidden');
-
-    videoEl.muted    = true;
-    videoEl.autoplay = false;
-    videoEl.loop     = false;
-    videoEl.src      = 'clear_intro.mp4';
-
-    let timers = [];
-
-    function startClearPlay() {
-        videoEl.currentTime = 0;
-        const p = videoEl.play();
-        if (p) p.catch(() => {});
-
-        // 4.4s 후 검정 페이드인 (0.6s) → 총 5초
-        timers.push(setTimeout(() => {
-            fadeEl.style.transition = 'opacity 0.6s ease';
-            fadeEl.style.opacity    = '1';
-            timers.push(setTimeout(() => {
-                videoEl.pause();
-                videoEl.src = '';
-                overlay.classList.add('hidden');
-                fadeEl.style.opacity   = '0';
-                fadeEl.style.transition = 'none';
-                callback();
-            }, 600));
-        }, 4400));
-    }
-
-    videoEl.addEventListener('canplay', function onReady() {
-        videoEl.removeEventListener('canplay', onReady);
-        startClearPlay();
-    }, { once: true });
-
-    videoEl.load();
-    // 캐시된 경우 즉시 시작
-    if (videoEl.readyState >= 3) startClearPlay();
-}
-
+/* ═══════════════════════════════════════════
+   loadStage — 스테이지 로딩 공통 로직
+   ═══════════════════════════════════════════ */
 function loadStage() {
     window.scrollTo(0, 0);
 
-    const stage = gameData[currentStageIndex];
-    const nextBtn = document.getElementById('next-mission-btn');
+    const stage        = gameData[currentStageIndex];
+    const nextBtn      = document.getElementById('next-mission-btn');
     const inputSection = document.getElementById('mission-input-section');
-    const storyBox = document.querySelector('.story-box');
+    const storyBox     = document.querySelector('.story-box');
 
     // 공통 초기화
     nextBtn.classList.remove('hidden');
     inputSection.classList.add('hidden');
-    messageEl.innerText = "";
-    inputEl.value = "";
+    messageEl.innerText = '';
+    inputEl.value = '';
     if (celebrationTimer) { clearInterval(celebrationTimer); celebrationTimer = null; }
     celebrationOverlay.classList.add('hidden');
     celebrationOverlay.innerHTML = '';
@@ -335,74 +430,73 @@ function loadStage() {
     mainContainer.classList.remove('corona-effect');
     storyBox.classList.remove('clear-mode');
 
-    // ① 배경 이미지 URL 결정 (WebP 우선)
-    const bgUrl = (currentStageIndex === gameData.length - 1)
-        ? 'bg_clear.webp'
-        : `bg_stage${currentStageIndex + 1}.webp`;
+    // 배경 URL 결정
+    const isClear = currentStageIndex === gameData.length - 1;
+    const bgUrl   = isClear ? 'bg_clear.webp' : `bg_stage${currentStageIndex + 1}.webp`;
 
-    // ② game-container를 투명하게만 (display는 유지 → 나중에 opacity로 페이드인)
-    mainContainer.style.opacity = '0';
+    // 컨테이너 투명 (인트로 영상 뒤 페이드인 준비)
+    mainContainer.style.opacity    = '0';
     mainContainer.style.transition = 'none';
 
-    const isClearStage = (currentStageIndex === gameData.length - 1);
-
-    // ③ 배경 이미지 preload 완료 후 배경 적용 + 전환 효과 시작
+    // 배경 preload 완료 후 인트로 시작
     preloadImage(bgUrl).then(() => {
         document.body.style.backgroundImage = `url('${bgUrl}')`;
 
-    // ④ 클리어 화면 / 일반 스테이지 분기
-    const introFn = isClearStage ? showClearIntro : showStageIntro;
-    introFn(currentStageIndex, () => {
+        const introFn = isClear ? showClearIntro : showStageIntro;
+        introFn(currentStageIndex, () => {
 
-        // ⑤ 전환 끝 → 스테이지 내용 세팅 후 페이드인
-        if (isClearStage) {
-            titleEl.innerHTML = `<span class="golden-glow-animated">🧬 우리라는 이름의 기적 🧬</span><span class="mission-clear-badge">🏆 MISSION CLEAR 🏆</span>`;
-            descEl.innerHTML = stage.desc;
-            nextBtn.classList.add('hidden');
-            inputSection.classList.add('hidden');
-            if (prevBtn) prevBtn.classList.add('hidden');
-            mainContainer.classList.add('corona-effect');
-            storyBox.classList.add('clear-mode');
-            document.getElementById('audio-clear-bgm').play().catch(() => {});
-            showCelebrationEffect();
-        } else {
-            const titleParts = stage.title.split(':');
-            if (titleParts.length > 1) {
-                titleEl.innerHTML = `${titleParts[0]}<br><span class="stage-subtitle">"${titleParts[1].trim()}"</span>`;
+            // 스테이지 내용 세팅
+            if (isClear) {
+                titleEl.innerHTML = `<span class="golden-glow-animated">🧬 우리라는 이름의 기적 🧬</span><span class="mission-clear-badge">🏆 MISSION CLEAR 🏆</span>`;
+                descEl.innerHTML  = stage.desc;
+                nextBtn.classList.add('hidden');
+                inputSection.classList.add('hidden');
+                if (prevBtn) prevBtn.classList.add('hidden');
+                mainContainer.classList.add('corona-effect');
+                storyBox.classList.add('clear-mode');
+                document.getElementById('audio-clear-bgm').play().catch(() => {});
+                showCelebrationEffect();
             } else {
-                titleEl.innerHTML = stage.title;
+                const parts = stage.title.split(':');
+                titleEl.innerHTML = parts.length > 1
+                    ? `${parts[0]}<br><span class="stage-subtitle">"${parts[1].trim()}"</span>`
+                    : stage.title;
+                descEl.innerHTML = stage.desc;
+                if (prevBtn) prevBtn.classList.toggle('hidden', currentStageIndex === 0);
             }
-            descEl.innerHTML = stage.desc;
-            if (prevBtn) {
-                if (currentStageIndex === 0) prevBtn.classList.add('hidden');
-                else prevBtn.classList.remove('hidden');
-            }
-        }
 
-        // ⑥ game-screen 표시 확인 후 컨테이너 페이드인
-        gameScreen.classList.remove('hidden');
-        window.scrollTo(0, 0);
-        requestAnimationFrame(() => {
-            mainContainer.style.transition = 'opacity 0.7s ease';
-            mainContainer.style.opacity = '1';
+            // 컨테이너 페이드인
+            gameScreen.classList.remove('hidden');
+            window.scrollTo(0, 0);
+            requestAnimationFrame(() => {
+                mainContainer.style.transition = 'opacity 0.7s ease';
+                mainContainer.style.opacity    = '1';
+            });
+
+            // 다음 스테이지 에셋 미리 캐싱
+            preloadNextAssets(currentStageIndex);
         });
-
-        // ⑦ 다음 스테이지 배경·영상 미리 캐싱 (백그라운드)
-        preloadNextBackground(currentStageIndex);
-        preloadNextVideo(currentStageIndex);
-    }); // introFn 끝
-    }); // preloadImage 끝
+    });
 }
 
+/* ═══════════════════════════════════════════
+   게임 플레이 함수들
+   ═══════════════════════════════════════════ */
 function showMission() {
-    window.scrollTo(0, 0); // 미션 확인 시에도 상단으로
-    const stage = gameData[currentStageIndex];
-    const nextBtn = document.getElementById('next-mission-btn');
+    window.scrollTo(0, 0);
+    const stage        = gameData[currentStageIndex];
+    const nextBtn      = document.getElementById('next-mission-btn');
     const inputSection = document.getElementById('mission-input-section');
     descEl.innerHTML = `
-        <div class="mission-title-box">${stage.missionTitle || "미션 설명"}</div>
-        <div class="mission-part"><div class="mission-label">🎯 미션 상세</div><div class="mission-text">${stage.missionDesc}</div></div>
-        <div class="mission-part"><div class="mission-label condition">✅ 완료 조건</div><div class="mission-text">${stage.missionCondition}</div></div>
+        <div class="mission-title-box">${stage.missionTitle || '미션 설명'}</div>
+        <div class="mission-part">
+            <div class="mission-label">🎯 미션 상세</div>
+            <div class="mission-text">${stage.missionDesc}</div>
+        </div>
+        <div class="mission-part">
+            <div class="mission-label condition">✅ 완료 조건</div>
+            <div class="mission-text">${stage.missionCondition}</div>
+        </div>
     `;
     nextBtn.classList.add('hidden');
     inputSection.classList.remove('hidden');
@@ -411,43 +505,44 @@ function showMission() {
 
 function goBack() {
     const inputSection = document.getElementById('mission-input-section');
-    if (!inputSection.classList.contains('hidden')) { loadStage(); } 
+    if (!inputSection.classList.contains('hidden')) loadStage();
     else if (currentStageIndex > 0) { currentStageIndex--; loadStage(); }
 }
 
 function checkAnswer() {
-    const stage = gameData[currentStageIndex];
+    const stage   = gameData[currentStageIndex];
     const userAns = inputEl.value.trim();
-    if (userAns === "") return;
+    if (!userAns) return;
     if (userAns === stage.answer) {
         popupKeyword.innerHTML = `🃏 <span class="highlight-item">핵심가치: ${stage.keyword}</span> 카드 획득!`;
-        popupText.innerHTML = stage.clearText;
-        successPopup.classList.remove('hidden'); 
-    } else { 
-        messageEl.innerText = "❌ 코드 불일치"; 
-        messageEl.className = "error";
+        popupText.innerHTML    = stage.clearText;
+        successPopup.classList.remove('hidden');
+    } else {
+        messageEl.innerText   = '❌ 코드 불일치';
+        messageEl.className   = 'error';
     }
 }
 
-function closePopupAndNext() { successPopup.classList.add('hidden'); currentStageIndex++; loadStage(); }
-function showHint() { hintTextEl.innerText = gameData[currentStageIndex].hint; hintPopup.classList.remove('hidden'); }
+function closePopupAndNext() {
+    successPopup.classList.add('hidden');
+    currentStageIndex++;
+    loadStage();
+}
+function showHint()  { hintTextEl.innerText = gameData[currentStageIndex].hint; hintPopup.classList.remove('hidden'); }
 function closeHint() { hintPopup.classList.add('hidden'); }
 
-let celebrationTimer = null;
-
+/* ═══════════════════════════════════════════
+   파티클 (클리어 화면)
+   ═══════════════════════════════════════════ */
 function showCelebrationEffect() {
     celebrationOverlay.classList.remove('hidden');
-    // 시간차를 두고 분산 생성 (0~3초 사이에 20개를 펼침)
     for (let i = 0; i < 20; i++) {
         setTimeout(() => createParticle(), Math.random() * 3000);
     }
-    // 이후 지속적으로 소량씩 생성 (1초당 3~4개)
     celebrationTimer = setInterval(() => {
         if (currentStageIndex === gameData.length - 1) {
-            const count = Math.floor(Math.random() * 2) + 3;
-            for (let i = 0; i < count; i++) {
-                setTimeout(() => createParticle(), Math.random() * 800);
-            }
+            const n = Math.floor(Math.random() * 2) + 3;
+            for (let i = 0; i < n; i++) setTimeout(() => createParticle(), Math.random() * 800);
         } else {
             clearInterval(celebrationTimer);
         }
@@ -455,14 +550,13 @@ function showCelebrationEffect() {
 }
 
 function createParticle() {
-    const particle = document.createElement('div');
-    particle.className = 'particle';
-    particle.innerHTML = Math.random() > 0.5 ? '🧬' : '⭐';
-    particle.style.left = `${Math.random() * 100}vw`;
-    const duration = Math.random() * 3 + 4; // 4~7초
-    particle.style.animationDuration = `${duration}s`;
-    particle.style.fontSize = `${Math.random() * 1.5 + 1}rem`;
-    celebrationOverlay.appendChild(particle);
-    // 떨어지고 나면 DOM에서 제거
-    setTimeout(() => particle.remove(), duration * 1000 + 200);
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.innerHTML = Math.random() > 0.5 ? '🧬' : '⭐';
+    p.style.left              = `${Math.random() * 100}vw`;
+    const dur = Math.random() * 3 + 4;
+    p.style.animationDuration = `${dur}s`;
+    p.style.fontSize          = `${Math.random() * 1.5 + 1}rem`;
+    celebrationOverlay.appendChild(p);
+    setTimeout(() => p.remove(), dur * 1000 + 200);
 }

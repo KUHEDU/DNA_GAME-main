@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
     <title>프로젝트: 최후의 백신</title>
-    <link rel="stylesheet" href="style.css?v=32">
+    <link rel="stylesheet" href="style.css?v=34">
 </head>
 <body>
     <div id="effect-overlay" class="pointer-events-none"></div>
@@ -13,14 +13,7 @@
     <!-- 미션 클리어 전환 오버레이 -->
     <div id="clear-intro-overlay" class="hidden"></div>
 
-    <!-- 스테이지 인트로: 배경 위에 살짝 얹히는 지직 효과 오버레이 -->
-    <div id="glitch-overlay" class="hidden">
-        <canvas id="noise-canvas"></canvas>
-        <div id="noise-scanline"></div>
-        <div id="noise-flicker"></div>
-    </div>
-
-    <!-- 스테이지 인트로 영상 오버레이 -->
+    <!-- 공통 영상 오버레이 (스테이지 인트로 / 인트로씨니 / 미션코드 입력 후 영상) -->
     <div id="stage-video-overlay" class="hidden">
         <video id="stage-intro-video" playsinline muted preload="auto"></video>
         <div id="stage-video-fade"></div>
