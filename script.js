@@ -79,19 +79,23 @@ const VideoPlayer = (() => {
         fade.style.opacity       = '1';  // 영상 준비 전 검정으로 가림
     }
 
-    /* 오버레이 숨기기 (페이드아웃 후 display:none) */
+    /* 오버레이 숨기기 — fade는 검정(opacity:1) 유지한 채 오버레이 전체를 페이드아웃
+       ※ fade를 0으로 만들면 video가 멈춘 순간 body 배경이 비쳐 깜빡이므로 절대 0으로 바꾸지 않음 */
     function hideOverlay(cb) {
         const { overlay, fade } = getEls();
+        /* fade는 그대로 opacity:1(검정) 유지 — 건드리지 않음 */
         fade.style.transition    = 'none';
-        fade.style.opacity       = '0';
-        overlay.style.transition = 'opacity 0.3s ease';
+        fade.style.opacity       = '1';
+        /* 오버레이 전체를 검정인 채로 서서히 페이드아웃 */
+        overlay.style.transition = 'opacity 0.35s ease';
         overlay.style.opacity    = '0';
         setTimeout(() => {
             overlay.style.visibility = 'hidden';
             overlay.style.display    = 'none';
-            overlay.classList.remove('hidden'); // 혹시 남은 hidden 클래스 제거
+            overlay.style.opacity    = '1';  // 다음 showOverlay()를 위해 복원
+            overlay.classList.remove('hidden');
             if (cb) cb();
-        }, 320);
+        }, 370);
     }
 
     /* 지직 효과 한 번 */
