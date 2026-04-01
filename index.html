@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
     <title>프로젝트: 최후의 백신</title>
-    <link rel="stylesheet" href="style.css?v=27">
+    <link rel="stylesheet" href="style.css?v=28">
 </head>
 <body>
     <div id="effect-overlay" class="pointer-events-none"></div>
@@ -18,6 +18,14 @@
         <canvas id="noise-canvas"></canvas>
         <div id="noise-scanline"></div>
         <div id="noise-flicker"></div>
+    </div>
+
+    <!-- 스테이지 인트로 영상 오버레이 -->
+    <div id="stage-video-overlay" class="hidden">
+        <video id="stage-intro-video" playsinline muted preload="auto">
+            <source src="" type="video/mp4">
+        </video>
+        <div id="stage-video-fade"></div>
     </div>
 
     <div class="game-container" id="main-ui">

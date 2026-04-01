@@ -18,7 +18,6 @@ const mainContainer = document.getElementById('main-ui');
 
 let gameData = [];
 let currentStageIndex = 0;
-let noiseAnimId = null; // TV 노이즈 애니메이션 ID
 
 async function fetchGameData() {
     try {
@@ -93,76 +92,59 @@ function checkMissionCode() {
 function startGame() { worldviewScreen.classList.add('hidden'); loadStage(); }
 
 /* ─────────────────────────────────────────
-   📺 스테이지 인트로: 배경 위 지직 효과
-   흐름: 배경 표시 → 지직거리며 3초 → 게임 컨테이너 페이드인
+   🎬 스테이지 인트로: 배경 위 짧은 영상 효과
+   흐름: 영상 재생(3초) → 페이드아웃 → 게임 컨테이너 페이드인
+   각 스테이지별 영상: stage1_intro.mp4 ~ stage5_intro.mp4
 ───────────────────────────────────────── */
 
-// 노이즈 캔버스: 낮은 해상도로 픽셀 노이즈 렌더링 (배경 위에 살짝만)
-function renderNoise(canvas) {
-    const ctx = canvas.getContext('2d');
-    const W = canvas.width;
-    const H = canvas.height;
-    const imageData = ctx.createImageData(W, H);
-    const data = imageData.data;
-    for (let i = 0; i < data.length; i += 4) {
-        const v = Math.random() * 255 | 0;
-        data[i] = v; data[i+1] = v; data[i+2] = v;
-        data[i+3] = 255;
-    }
-    ctx.putImageData(imageData, 0, 0);
-}
+const STAGE_VIDEOS = [
+    'stage1_intro.mp4',
+    'stage2_intro.mp4',
+    'stage3_intro.mp4',
+    'stage4_intro.mp4',
+    'stage5_intro.mp4'
+];
 
-// 간헐적 글리치 가로선: 가끔만 등장해서 지직 느낌
-function maybeGlitchLine(canvas) {
-    if (Math.random() > 0.92) { // 8% 확률로만 등장
-        const ctx = canvas.getContext('2d');
-        const y = Math.random() * canvas.height | 0;
-        const h = (Math.random() * 3 + 1) | 0;
-        ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.15})`;
-        ctx.fillRect(0, y, canvas.width, h);
-    }
-}
-
-// 스테이지 인트로 실행
-// 1) 스테이지 배경을 body에 적용 (전면에 보이도록)
-// 2) game-container는 숨긴 채 지직 오버레이만 올림
-// 3) 3초 후 지직 페이드아웃 → 게임 컨테이너 페이드인
+// 스테이지 인트로 영상 재생
+// 1) 스테이지 배경을 body에 적용
+// 2) 해당 스테이지 영상을 오버레이로 재생 (약 3초)
+// 3) 페이드아웃 후 게임 컨테이너 페이드인
 function showStageIntro(stageIndex, callback) {
-    const glitchEl = document.getElementById('glitch-overlay');
-    const canvas   = document.getElementById('noise-canvas');
-    const mainUI   = document.getElementById('main-ui');
+    const overlay  = document.getElementById('stage-video-overlay');
+    const videoEl  = document.getElementById('stage-intro-video');
+    const fadeEl   = document.getElementById('stage-video-fade');
 
-    // ① 캔버스 저해상도 설정 (픽셀 뭉개짐으로 레트로 노이즈 느낌)
-    canvas.width  = 120;
-    canvas.height = 213;
+    const videoSrc = STAGE_VIDEOS[stageIndex] || STAGE_VIDEOS[0];
 
-    // ④ 지직 오버레이 표시
-    glitchEl.classList.remove('hidden', 'fade-out');
-    glitchEl.style.opacity = '1';
+    // 영상 소스 설정 및 오버레이 표시
+    videoEl.src = videoSrc;
+    videoEl.currentTime = 0;
+    fadeEl.style.opacity = '0';
+    fadeEl.style.transition = 'none';
 
-    // ⑤ 노이즈 루프 시작
-    if (noiseAnimId) cancelAnimationFrame(noiseAnimId);
-    let frame = 0;
-    function noiseLoop() {
-        // 매 2프레임마다 노이즈 갱신 (너무 빠르지 않게)
-        if (frame % 2 === 0) renderNoise(canvas);
-        maybeGlitchLine(canvas);
-        frame++;
-        noiseAnimId = requestAnimationFrame(noiseLoop);
-    }
-    noiseLoop();
+    overlay.classList.remove('hidden', 'svo-fadeout');
+    overlay.style.opacity = '1';
 
-    // ⑥ 2.4초 후 지직 페이드아웃 시작 (총 3초 = 2.4s + 0.6s 페이드)
+    // 영상 로드 후 재생
+    videoEl.load();
+    videoEl.play().catch(() => {
+        // autoplay 실패 시에도 3초 후 콜백
+    });
+
+    // 2.4초 후 페이드 오버레이(검정) 페이드인 → 영상 위를 덮어 자연스럽게 전환
     setTimeout(() => {
-        glitchEl.classList.add('fade-out');
+        fadeEl.style.transition = 'opacity 0.6s ease';
+        fadeEl.style.opacity = '1';
 
-        // ⑦ 페이드아웃 완료 후: 노이즈 중단 + 게임 컨테이너 등장
+        // 0.6초 후 오버레이 제거 & 콜백
         setTimeout(() => {
-            cancelAnimationFrame(noiseAnimId);
-            noiseAnimId = null;
-            glitchEl.classList.add('hidden');
-            glitchEl.classList.remove('fade-out');
-            callback(); // → loadStage 콜백에서 컨테이너 페이드인
+            videoEl.pause();
+            videoEl.src = '';
+            overlay.classList.add('hidden');
+            overlay.style.opacity = '';
+            fadeEl.style.opacity = '0';
+            fadeEl.style.transition = 'none';
+            callback();
         }, 600);
     }, 2400);
 }

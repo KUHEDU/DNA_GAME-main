@@ -413,6 +413,35 @@ input[type="text"] {
 }
 
 /* ============================================================
+   🎬 스테이지 인트로 영상 오버레이
+   ============================================================ */
+#stage-video-overlay {
+    position: fixed; top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    z-index: 9998;
+    background: #000;
+    overflow: hidden;
+    pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+}
+#stage-video-overlay.hidden { display: none; }
+
+#stage-intro-video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* 비디오 위를 덮는 페이드 레이어 (검정→투명→검정 전환용) */
+#stage-video-fade {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ============================================================
    🏆 미션 클리어 전환 오버레이
    ============================================================ */
 #clear-intro-overlay {
