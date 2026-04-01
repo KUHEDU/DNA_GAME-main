@@ -1,38 +1,91 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
 
+/* ============================================================
+   🎯 반응형 디자인 토큰 (CSS 변수)
+   모든 크기값은 여기서 clamp()로 제어됩니다.
+   clamp(최솟값, 기준값_vw, 최댓값)
+   → 320px 소형폰 ~ 430px 대형폰 전 범위 자동 대응
+   ============================================================ */
+:root {
+    /* 폰트 크기 */
+    --fs-xs:   clamp(0.60rem, 2.0vw, 0.70rem);  /* 뱃지, 라벨 */
+    --fs-sm:   clamp(0.75rem, 2.4vw, 0.85rem);  /* 보조 텍스트 */
+    --fs-base: clamp(0.85rem, 2.8vw, 0.95rem);  /* 본문 */
+    --fs-md:   clamp(0.90rem, 3.0vw, 1.05rem);  /* h2, 버튼 */
+    --fs-lg:   clamp(1.00rem, 3.4vw, 1.20rem);  /* 소제목 */
+    --fs-xl:   clamp(1.30rem, 4.5vw, 1.60rem);  /* stage-subtitle */
+    --fs-2xl:  clamp(1.80rem, 6.0vw, 2.40rem);  /* 메인 타이틀 */
+
+    /* 여백 */
+    --sp-xs:  clamp(4px,  1.2vw, 6px);
+    --sp-sm:  clamp(8px,  2.0vw, 12px);
+    --sp-md:  clamp(12px, 3.0vw, 18px);
+    --sp-lg:  clamp(16px, 4.0vw, 24px);
+    --sp-xl:  clamp(20px, 5.0vw, 30px);
+
+    /* 컨테이너 */
+    --radius-card: clamp(10px, 3vw, 15px);
+    --padding-card: clamp(16px, 4.5vw, 25px);
+    --border-left: clamp(3px, 0.8vw, 4px);
+}
+
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-/* 💡 [V26 핵심] 전체 화면 스크롤 허용 */
+/* ============================================================
+   전체 레이아웃
+   ============================================================ */
+html { font-size: 16px; }
+
 body {
     margin: 0; padding: 0;
     font-family: 'Noto Sans KR', sans-serif;
+    font-size: var(--fs-base);
     background-color: #000;
-    background-size: cover; background-position: center;
+    background-size: cover;
+    background-position: center top;
     color: #ffffff;
-    min-height: 100vh; /* 최소 높이 유지 */
-    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh; /* iOS Safari 주소창 대응 */
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
     overflow-x: hidden;
-    overflow-y: auto; /* 내용 길어지면 스크롤 발생 */
+    overflow-y: auto;
+    padding: var(--sp-md) 0;
 }
 
-/* 📱 메인 컨테이너 UI (반응형 최적화) */
+/* ============================================================
+   📱 메인 게임 컨테이너
+   ============================================================ */
 .game-container {
-    width: 92%; max-width: 500px;
-    margin: 20px auto; /* 상하 여백 추가하여 짤림 방지 */
-    background-color: rgba(141, 141, 141, 0.1) !important; 
-    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(1px);
-    padding: 25px; border-radius: 15px;
+    width: 92%;
+    max-width: 500px;
+    margin: var(--sp-sm) auto;
+    background-color: rgba(141, 141, 141, 0.1) !important;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(1px);
+    padding: var(--padding-card);
+    border-radius: var(--radius-card);
     box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.5);
-    position: relative; z-index: 10;
-    display: flex; flex-direction: column;
-    min-height: auto; /* 내용만큼 늘어남 */
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
 }
 
-/* 💡 메인 게임 타이틀 로고 */
-.main-game-title { display: flex; flex-direction: column; align-items: center; margin: 10px 0 20px 0; padding: 0; }
+/* ============================================================
+   타이틀 / 헤딩
+   ============================================================ */
+.main-game-title {
+    display: flex; flex-direction: column; align-items: center;
+    margin: var(--sp-sm) 0 var(--sp-lg) 0;
+    padding: 0;
+}
 .title-top {
-    font-size: 2.4rem; font-weight: 900;
+    font-size: var(--fs-2xl);
+    font-weight: 900;
     background: linear-gradient(to bottom, #ffffff, #aab0b8);
     -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -40,137 +93,294 @@ body {
     filter: drop-shadow(0 0 8px rgba(88, 166, 255, 0.8));
     letter-spacing: -1px; line-height: 1.1;
 }
-.title-bottom { font-size: 0.9rem; font-weight: bold; color: #58a6ff; letter-spacing: 2px; margin-top: 5px; opacity: 0.9; }
+.title-bottom {
+    font-size: var(--fs-sm);
+    font-weight: bold; color: #58a6ff;
+    letter-spacing: 2px; margin-top: var(--sp-xs); opacity: 0.9;
+}
 
-h1#hospital-logo { color: #ffffff; font-size: 1.1rem; text-align: center; margin-top: 35px; margin-bottom: 5px; }
+h1#hospital-logo {
+    color: #ffffff;
+    font-size: var(--fs-md);
+    text-align: center;
+    margin-top: var(--sp-xl);
+    margin-bottom: var(--sp-xs);
+}
 #intro-screen h1#hospital-logo { margin-top: 0; }
 
-.corona-effect { border: 1px solid rgba(255, 255, 255, 0.8) !important; animation: corona-pulse 4s infinite alternate; background-color: rgba(0, 0, 0, 0.4) !important; }
+h2 {
+    color: #ffee00;
+    font-size: var(--fs-md);
+    text-align: center;
+    margin: var(--sp-sm) 0 var(--sp-xs) 0;
+}
+
+hr { border: none; border-top: 1px solid #30363d; margin: var(--sp-sm) 0; flex-shrink: 0; }
+
+/* ============================================================
+   뱃지 / 서브타이틀
+   ============================================================ */
+.security-badge {
+    font-size: var(--fs-xs);
+    color: #ff3e3e; text-align: center;
+    letter-spacing: 2px; margin-bottom: var(--sp-sm);
+    font-weight: bold;
+}
+.intro-subtitle { color: #ff8787 !important; font-size: var(--fs-md) !important; }
+.intro-box {
+    border-left: var(--border-left) solid #ff3e3e !important;
+    background: rgba(255, 0, 0, 0.05) !important;
+}
+.stage-subtitle {
+    font-size: var(--fs-xl);
+    color: #00ff0d; display: block;
+    margin-top: var(--sp-xs);
+    font-weight: bold;
+    text-shadow: 0 0 15px rgba(0, 119, 255, 0.4);
+}
+.emergency-alert {
+    color: #ff3e3e !important;
+    font-size: var(--fs-md) !important;
+    text-align: center;
+    animation: blink 1s infinite;
+    word-break: keep-all;
+}
+
+/* ============================================================
+   스토리박스
+   ============================================================ */
+.story-box {
+    background-color: rgba(0, 0, 0, 0.4) !important;
+    padding: var(--sp-md);
+    border-left: var(--border-left) solid #3fb950;
+    margin-bottom: var(--sp-sm);
+    line-height: 1.75;
+    border-radius: 4px;
+    font-size: var(--fs-base);
+    max-height: none;
+    overflow-y: visible;
+    flex-grow: 1;
+    color: #ffffff !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    word-break: keep-all;
+}
+.story-box p { margin: 0 0 var(--sp-sm) 0; }
+.story-box p:last-child { margin-bottom: 0; }
+
+/* ============================================================
+   버튼 / 입력창
+   ============================================================ */
+button {
+    width: 100%;
+    padding: clamp(11px, 3.5vw, 15px);
+    border-radius: 8px; border: none;
+    background: #238636; color: white;
+    font-weight: bold; cursor: pointer;
+    font-size: var(--fs-md) !important;
+    margin-bottom: var(--sp-xs);
+    flex-shrink: 0;
+    font-family: 'Noto Sans KR', sans-serif;
+}
+.input-section {
+    display: flex; gap: var(--sp-xs);
+    margin-top: var(--sp-xs);
+    width: 100%; flex-shrink: 0;
+}
+input[type="text"] {
+    flex: 2;
+    padding: clamp(9px, 2.8vw, 12px);
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    background: #0d1117; color: white;
+    font-size: var(--fs-base);
+    text-align: center;
+    font-family: 'Noto Sans KR', sans-serif;
+}
+.confirm-btn { flex: 1.2; background: #1f6feb; margin: 0; }
+.hint-btn    { flex: 0.8; background: #6e7681; margin: 0; }
+
+#prev-btn {
+    position: absolute; top: clamp(10px, 2.5vw, 15px); left: clamp(10px, 2.5vw, 15px);
+    width: auto;
+    padding: clamp(5px, 1.5vw, 7px) clamp(9px, 2.5vw, 13px);
+    background: rgba(48, 54, 61, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    color: #ffffff !important;
+    font-size: var(--fs-xs) !important;
+    font-weight: bold; border-radius: 6px; z-index: 100;
+}
+
+/* ============================================================
+   미션 박스
+   ============================================================ */
+.mission-title-box {
+    background: transparent; color: #f1e05a;
+    font-weight: bold; font-size: var(--fs-md);
+    padding: var(--sp-xs) 0; text-align: center;
+    border-top: 1px solid rgba(241, 224, 90, 0.2);
+    border-bottom: 1px solid rgba(241, 224, 90, 0.2);
+    margin-bottom: var(--sp-md);
+}
+.mission-part {
+    background: rgba(0, 0, 0, 0.2); border-radius: 8px;
+    padding: var(--sp-sm); margin-bottom: var(--sp-sm);
+    border: 1px solid #30363d;
+}
+.mission-label { font-size: var(--fs-xs); color: #8b949e; margin-bottom: var(--sp-xs); }
+.mission-text  { font-size: var(--fs-base); color: #ffffff; line-height: 1.6; word-break: keep-all; }
+
+/* ============================================================
+   팝업
+   ============================================================ */
+#success-popup, #hint-popup {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    background: rgba(0,0,0,0.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+}
+.popup-content {
+    background: #fff; color: #222;
+    width: 88%; max-width: 400px;
+    padding: var(--sp-lg); border-radius: var(--radius-card);
+    text-align: center; position: relative;
+}
+.popup-content h2 { font-size: var(--fs-lg); margin: var(--sp-xs) 0; }
+.popup-content p  { font-size: var(--fs-base); line-height: 1.6; word-break: keep-all; }
+.close-btn {
+    position: absolute; top: 10px; right: 15px;
+    font-size: clamp(20px, 5vw, 24px); color: #aaa; cursor: pointer;
+}
+.highlight-item {
+    background-color: rgba(135, 206, 235, 0.5) !important;
+    color: #000 !important; padding: 2px 6px;
+    border-radius: 4px; font-weight: bold;
+}
+
+/* ============================================================
+   비디오 컨테이너
+   ============================================================ */
+#video-container {
+    width: clamp(50%, 60vw, 65%);
+    margin: 0 auto var(--sp-md) auto;
+    aspect-ratio: 9 / 16;
+    overflow: hidden; border-radius: 10px;
+    background: #000; border: 1px solid #30363d;
+    flex-shrink: 0;
+}
+#prologue-video { width: 100%; height: 100%; object-fit: cover; }
+
+/* ============================================================
+   특수 효과 클래스
+   ============================================================ */
+.corona-effect {
+    border: 1px solid rgba(255, 255, 255, 0.8) !important;
+    animation: corona-pulse 4s infinite alternate;
+    background-color: rgba(0, 0, 0, 0.4) !important;
+}
 @keyframes corona-pulse {
-    0% { box-shadow: 0 0 30px #fff, 0 0 50px #f1e05a, 0 0 70px #ff8c00; }
+    0%   { box-shadow: 0 0 30px #fff, 0 0 50px #f1e05a, 0 0 70px #ff8c00; }
     100% { box-shadow: 0 0 50px #fff, 0 0 80px #f1e05a, 0 0 120px #ff4500; }
 }
 
-.security-badge { font-size: 0.65rem; color: #ff3e3e; text-align: center; letter-spacing: 2px; margin-bottom: 10px; font-weight: bold; }
-.intro-subtitle { color: #ff8787 !important; font-size: 1rem !important; }
-.intro-box { border-left: 4px solid #ff3e3e !important; background: rgba(255, 0, 0, 0.05) !important; }
 .pulse-btn { animation: pulse-green 2s infinite; }
 @keyframes pulse-green {
-    0% { box-shadow: 0 0 0 0 rgba(35, 134, 54, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(35, 134, 54, 0); }
+    0%   { box-shadow: 0 0 0 0 rgba(35, 134, 54, 0.7); }
+    70%  { box-shadow: 0 0 0 10px rgba(35, 134, 54, 0); }
     100% { box-shadow: 0 0 0 0 rgba(35, 134, 54, 0); }
 }
 
-.clear-mode { border-left: 4px solid #f1e05a !important; background: rgba(0, 0, 0, 0.1) !important; -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); animation: slideUp 1.5s ease-out; }
+.clear-mode {
+    border-left: var(--border-left) solid #f1e05a !important;
+    background: rgba(0, 0, 0, 0.1) !important;
+    -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+    animation: slideUp 1.5s ease-out;
+}
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
 .golden-glow-animated {
-    font-size: 1.4rem; font-weight: bold;
+    font-size: clamp(1.0rem, 3.6vw, 1.4rem);
+    font-weight: bold;
     background: linear-gradient(to bottom, #fff, #f1e05a, #b8860b);
     -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
     -webkit-filter: drop-shadow(0 0 10px rgba(241, 224, 90, 0.5));
     filter: drop-shadow(0 0 10px rgba(241, 224, 90, 0.5));
-    display: inline-block; animation: shine 3s infinite;
-    white-space: nowrap; word-break: keep-all;
+    display: inline-block;
+    animation: shine 3s infinite;
+    white-space: nowrap;
+    word-break: keep-all;
 }
-@keyframes shine { 0%, 100% { -webkit-filter: drop-shadow(0 0 5px rgba(241, 224, 90, 0.5)); filter: drop-shadow(0 0 5px rgba(241, 224, 90, 0.5)); } 50% { -webkit-filter: drop-shadow(0 0 20px rgba(241, 224, 90, 0.8)); filter: drop-shadow(0 0 20px rgba(241, 224, 90, 0.8)); } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes shine {
+    0%, 100% { filter: drop-shadow(0 0 5px rgba(241, 224, 90, 0.5)); -webkit-filter: drop-shadow(0 0 5px rgba(241, 224, 90, 0.5)); }
+    50%       { filter: drop-shadow(0 0 20px rgba(241, 224, 90, 0.8)); -webkit-filter: drop-shadow(0 0 20px rgba(241, 224, 90, 0.8)); }
+}
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
+}
 
-.emergency-alert { color: #ff3e3e !important; font-size: 1.1rem !important; text-align: center; animation: blink 1s infinite; }
-@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-h2 { color: #ffee00; font-size: 1.1rem; text-align: center; margin: 10px 0 5px 0; }
-.stage-subtitle { font-size: 1.6rem; color: #00ff0d; display: block; margin-top: 5px; font-weight: bold; text-shadow: 0 0 15px rgba(0, 119, 255, 0.4); }
-hr { border: none; border-top: 1px solid #30363d; margin: 12px 0; flex-shrink: 0; }
-
-#video-container { width: 65%; margin: 0 auto 15px auto; aspect-ratio: 9 / 16; overflow: hidden; border-radius: 10px; background: #000; border: 1px solid #30363d; flex-shrink: 0; }
-#prologue-video { width: 100%; height: 100%; object-fit: cover; }
-
-.story-box { background-color: rgba(0, 0, 0, 0.4) !important; padding: 18px; border-left: 4px solid #3fb950; margin-bottom: 12px; line-height: 1.7; border-radius: 4px; font-size: 0.95rem; max-height: none; overflow-y: visible; flex-grow: 1; color: #ffffff !important; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8); }
-
-button { width: 100%; padding: 15px; border-radius: 8px; border: none; background: #238636; color: white; font-weight: bold; cursor: pointer; font-size: 1.1rem !important; margin-bottom: 8px; flex-shrink: 0; }
-.input-section { display: flex; gap: 6px; margin-top: 5px; width: 100%; flex-shrink: 0; }
-input[type="text"] { flex: 2; padding: 12px; border-radius: 6px; border: 1px solid #30363d; background: #0d1117; color: white; font-size: 1rem; text-align: center; }
-.confirm-btn { flex: 1.2; background: #1f6feb; margin: 0; }
-.hint-btn { flex: 0.8; background: #6e7681; margin: 0; }
-
-#prev-btn { position: absolute; top: 15px; left: 15px; width: auto; padding: 6px 12px; background: rgba(48, 54, 61, 0.9) !important; border: 1px solid rgba(255, 255, 255, 0.4) !important; color: #ffffff !important; font-size: 0.8rem !important; font-weight: bold; border-radius: 6px; z-index: 100; }
-
-.mission-title-box { background: transparent; color: #f1e05a; font-weight: bold; font-size: 1.1rem; padding: 8px 0; text-align: center; border-top: 1px solid rgba(241, 224, 90, 0.2); border-bottom: 1px solid rgba(241, 224, 90, 0.2); margin-bottom: 15px; }
-.mission-part { background: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 12px; margin-bottom: 12px; border: 1px solid #30363d; }
-.mission-label { font-size: 0.8rem; color: #8b949e; margin-bottom: 5px; }
-.mission-text { font-size: 0.95rem; color: #ffffff; line-height: 1.5; }
-
-.hidden { display: none !important; }
-
-/* 💡 팝업 스타일 유지 */
-#success-popup, #hint-popup { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.popup-content { background: #fff; color: #222; width: 85%; max-width: 400px; padding: 25px; border-radius: 15px; text-align: center; position: relative; }
-.close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; color: #aaa; cursor: pointer; }
-.highlight-item { background-color: rgba(135, 206, 235, 0.5) !important; color: #000 !important; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
-
+/* ============================================================
+   파티클
+   ============================================================ */
 .particle {
     position: fixed;
-    top: -60px; /* 화면 위쪽에서 시작 */
+    top: -60px;
     pointer-events: none;
     animation: fall linear forwards;
     will-change: transform;
 }
 @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
 
-/* ========================================
-   📺 스테이지 인트로: 배경 위에 살짝 얹히는 지직 효과
-   - 배경(body background)은 그대로 보이고
-   - 이 오버레이는 투명하게 위에 올라감
-   ======================================== */
+/* ============================================================
+   게임 컨테이너 페이드인
+   ============================================================ */
+#game-screen.fade-in { animation: screenFadeIn 0.7s ease forwards; }
+@keyframes screenFadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   📺 지직 효과 오버레이
+   ============================================================ */
 #glitch-overlay {
-    position: fixed;
-    top: 0; left: 0;
+    position: fixed; top: 0; left: 0;
     width: 100vw; height: 100vh;
     z-index: 9999;
-    background: transparent; /* 배경 보이게 투명 유지 */
-    overflow: hidden;
-    pointer-events: none;
-    opacity: 1;
-    transition: opacity 0.6s ease;
+    background: transparent;
+    overflow: hidden; pointer-events: none;
+    opacity: 1; transition: opacity 0.6s ease;
 }
-#glitch-overlay.fade-out {
-    opacity: 0;
-}
+#glitch-overlay.fade-out { opacity: 0; }
 
-/* 노이즈 캔버스: 배경 위에 반투명하게 살짝만 */
 #noise-canvas {
-    position: absolute;
-    top: 0; left: 0;
+    position: absolute; top: 0; left: 0;
     width: 100%; height: 100%;
-    display: block;
-    opacity: 0.10; /* 낮게 유지 → 배경이 주인공 */
+    display: block; opacity: 0.10;
     mix-blend-mode: screen;
 }
-
-/* 스캔라인: 미세한 가로줄 */
 #noise-scanline {
-    position: absolute;
-    top: 0; left: 0;
+    position: absolute; top: 0; left: 0;
     width: 100%; height: 100%;
     background: repeating-linear-gradient(
         to bottom,
-        transparent 0px,
-        transparent 2px,
-        rgba(0, 0, 0, 0.08) 2px,
-        rgba(0, 0, 0, 0.08) 3px
+        transparent 0px, transparent 2px,
+        rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 3px
     );
-    pointer-events: none;
-    z-index: 1;
+    pointer-events: none; z-index: 1;
 }
-
-/* 깜빡임: 간헐적으로 화면 흔들리는 느낌 */
 #noise-flicker {
-    position: absolute;
-    top: 0; left: 0;
+    position: absolute; top: 0; left: 0;
     width: 100%; height: 100%;
-    background: rgba(255, 255, 255, 0);
-    pointer-events: none;
-    z-index: 2;
+    background: rgba(255,255,255,0);
+    pointer-events: none; z-index: 2;
     animation: glitch-flicker 2.5s infinite;
 }
 @keyframes glitch-flicker {
@@ -187,55 +397,35 @@ input[type="text"] { flex: 2; padding: 12px; border-radius: 6px; border: 1px sol
     100% { background: rgba(255,255,255,0.00); transform: translateX(0); }
 }
 
-/* 게임 컨테이너 등장 애니메이션 */
-#game-screen.fade-in {
-    animation: screenFadeIn 0.7s ease forwards;
-}
-@keyframes screenFadeIn {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ==========================================
+/* ============================================================
    🏆 미션 클리어 전환 오버레이
-   ========================================== */
+   ============================================================ */
 #clear-intro-overlay {
-    position: fixed;
-    top: 0; left: 0;
+    position: fixed; top: 0; left: 0;
     width: 100vw; height: 100vh;
-    z-index: 9999;
-    background: #000;
+    z-index: 9999; background: #000;
     display: flex; align-items: center; justify-content: center;
-    overflow: hidden;
-    pointer-events: none;
+    overflow: hidden; pointer-events: none;
     transition: opacity 0.8s ease;
 }
 #clear-intro-overlay.ci-fadeout { opacity: 0; }
 
-/* 황금 플래시 */
 .ci-flash {
-    position: absolute;
-    top: 50%; left: 50%;
+    position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%) scale(0);
-    width: 20px; height: 20px;
-    border-radius: 50%;
+    width: 20px; height: 20px; border-radius: 50%;
     background: radial-gradient(circle, #fff 0%, #ffe066 30%, #ff8c00 70%, transparent 100%);
-    opacity: 0;
-    transition: none;
+    opacity: 0; transition: none;
 }
-.ci-flash.ci-flash-burst {
-    animation: flashBurst 0.5s ease-out forwards;
-}
+.ci-flash.ci-flash-burst { animation: flashBurst 0.5s ease-out forwards; }
 @keyframes flashBurst {
     0%   { transform: translate(-50%, -50%) scale(0);   opacity: 1; }
     40%  { transform: translate(-50%, -50%) scale(60);  opacity: 0.9; }
     100% { transform: translate(-50%, -50%) scale(120); opacity: 0; }
 }
 
-/* 빛줄기 방사 */
 .ci-rays {
-    position: absolute;
-    top: 50%; left: 50%;
+    position: absolute; top: 50%; left: 50%;
     width: 600px; height: 600px;
     transform: translate(-50%, -50%) rotate(0deg) scale(0);
     opacity: 0;
@@ -252,8 +442,7 @@ input[type="text"] { flex: 2; padding: 12px; border-radius: 6px; border: 1px sol
         rgba(255,220,50,0.55) 324deg, transparent 342deg,
         rgba(255,220,50,0.55) 360deg
     );
-    border-radius: 50%;
-    transition: none;
+    border-radius: 50%; transition: none;
 }
 .ci-rays.ci-rays-show {
     animation: raysAppear 0.4s ease-out forwards, raysSpin 6s linear 0.4s infinite;
@@ -267,14 +456,12 @@ input[type="text"] { flex: 2; padding: 12px; border-radius: 6px; border: 1px sol
     to   { transform: translate(-50%, -50%) rotate(360deg) scale(1); }
 }
 
-/* 외곽 펄스 링 */
 .ci-ring {
-    position: absolute;
-    top: 50%; left: 50%;
+    position: absolute; top: 50%; left: 50%;
     width: 80px; height: 80px;
     transform: translate(-50%, -50%) scale(0);
     border-radius: 50%;
-    border: 4px solid rgba(255, 220, 50, 0.9);
+    border: 4px solid rgba(255,220,50,0.9);
     box-shadow: 0 0 30px rgba(255,200,0,0.8), inset 0 0 20px rgba(255,200,0,0.4);
     opacity: 0;
 }
@@ -290,43 +477,34 @@ input[type="text"] { flex: 2; padding: 12px; border-radius: 6px; border: 1px sol
     to   { box-shadow: 0 0 60px rgba(255,200,0,1), 0 0 100px rgba(255,140,0,0.5); }
 }
 
-/* 중앙 MISSION CLEAR 텍스트 */
 .ci-label {
     position: relative; z-index: 10;
     text-align: center;
-    font-size: 2rem; font-weight: 900;
-    line-height: 1.3;
-    letter-spacing: 4px;
+    font-size: clamp(1.6rem, 6vw, 2.2rem);
+    font-weight: 900; line-height: 1.3; letter-spacing: 4px;
     color: #fff;
     text-shadow: 0 0 20px rgba(255,220,50,1), 0 0 40px rgba(255,140,0,0.9), 0 0 70px rgba(255,100,0,0.6);
-    transform: scale(0.3);
-    opacity: 0;
-    filter: blur(8px);
+    transform: scale(0.3); opacity: 0; filter: blur(8px);
 }
-.ci-label.ci-label-show {
-    animation: labelPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
+.ci-label.ci-label-show { animation: labelPop 0.5s cubic-bezier(0.175,0.885,0.32,1.275) forwards; }
 @keyframes labelPop {
     from { transform: scale(0.3); opacity: 0; filter: blur(8px); }
     to   { transform: scale(1);   opacity: 1; filter: blur(0); }
 }
 
-/* ==========================================
+/* ============================================================
    🏆 MISSION CLEAR 배지 (제목 하단)
-   ========================================== */
+   ============================================================ */
 .mission-clear-badge {
     display: block;
-    margin-top: 10px;
-    font-size: 1rem;
-    font-weight: 900;
-    letter-spacing: 3px;
-    color: #fff;
+    margin-top: var(--sp-sm);
+    font-size: clamp(0.80rem, 2.8vw, 1.0rem);
+    font-weight: 900; letter-spacing: 3px;
     background: linear-gradient(90deg, #b8860b, #ffd700, #ffe066, #ffd700, #b8860b);
     background-size: 200% auto;
     -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
     animation: badgeShine 2s linear infinite, badgePop 0.6s cubic-bezier(0.175,0.885,0.32,1.275) both;
-    text-shadow: none;
     filter: drop-shadow(0 0 6px rgba(255,200,0,0.8));
     -webkit-filter: drop-shadow(0 0 6px rgba(255,200,0,0.8));
 }
@@ -338,4 +516,70 @@ input[type="text"] { flex: 2; padding: 12px; border-radius: 6px; border: 1px sol
     0%   { opacity: 0; transform: scale(0.5) translateY(-10px); }
     70%  { transform: scale(1.1) translateY(2px); }
     100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ============================================================
+   유틸리티
+   ============================================================ */
+.hidden { display: none !important; }
+
+/* ============================================================
+   📱 미디어쿼리 — 소형폰 (320px 이하: Galaxy A 계열 구형)
+   ============================================================ */
+@media screen and (max-width: 360px) {
+    :root {
+        --fs-xs:   0.60rem;
+        --fs-sm:   0.72rem;
+        --fs-base: 0.82rem;
+        --fs-md:   0.88rem;
+        --fs-lg:   0.95rem;
+        --fs-xl:   1.20rem;
+        --fs-2xl:  1.70rem;
+        --padding-card: 14px;
+        --sp-md: 10px;
+        --sp-lg: 14px;
+    }
+    #video-container { width: 55%; }
+    button { padding: 10px; }
+}
+
+/* ============================================================
+   📱 미디어쿼리 — 표준 폰 (361px ~ 414px: iPhone SE~14, Galaxy S)
+   ============================================================ */
+@media screen and (min-width: 361px) and (max-width: 414px) {
+    :root {
+        --fs-base: 0.87rem;
+        --fs-md:   0.95rem;
+        --fs-xl:   1.40rem;
+        --fs-2xl:  2.10rem;
+        --padding-card: 20px;
+    }
+}
+
+/* ============================================================
+   📱 미디어쿼리 — 대형 폰 (415px+: iPhone Pro Max, Galaxy Ultra)
+   ============================================================ */
+@media screen and (min-width: 415px) {
+    :root {
+        --fs-base: 0.95rem;
+        --fs-md:   1.05rem;
+        --fs-xl:   1.60rem;
+        --fs-2xl:  2.40rem;
+        --padding-card: 25px;
+    }
+    #video-container { width: 65%; }
+}
+
+/* ============================================================
+   📱 세로 화면 매우 짧은 경우 (높이 650px 미만: 가로 모드 등)
+   ============================================================ */
+@media screen and (max-height: 650px) {
+    :root {
+        --sp-md: 8px;
+        --sp-lg: 12px;
+        --sp-xl: 16px;
+    }
+    h1#hospital-logo { margin-top: var(--sp-md); }
+    .story-box { line-height: 1.55; }
+    button { padding: 10px; }
 }
