@@ -42,16 +42,16 @@ body {
     font-size: var(--fs-base);
     background-color: #000;
     background-size: cover;
-    background-position: center top;
+    background-position: center center;
     color: #ffffff;
     min-height: 100vh;
     min-height: 100dvh; /* iOS Safari 주소창 대응 */
     display: flex;
-    align-items: flex-start;
+    align-items: center;        /* 세로 가운데 정렬 */
     justify-content: center;
     overflow-x: hidden;
     overflow-y: auto;
-    padding: var(--sp-md) 0;
+    padding: clamp(24px, 6vh, 48px) 0; /* 상하 여백 */
 }
 
 /* ============================================================
@@ -60,7 +60,7 @@ body {
 .game-container {
     width: 92%;
     max-width: 500px;
-    margin: var(--sp-sm) auto;
+    margin: clamp(20px, 4vh, 40px) auto; /* 상하 여백 충분히 */
     background-color: rgba(141, 141, 141, 0.1) !important;
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(1px);
