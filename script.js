@@ -49,8 +49,9 @@ const VIDEOS = {
    ═══════════════════════════════════════════ */
 const VideoCtrl = (() => {
     /* 내부 상태 */
-    let _timers   = [];
-    let _isActive = false;
+    let _timers    = [];
+    let _isActive  = false;
+    let _forceTimer = null;
 
     const _ov       = () => document.getElementById('stage-video-overlay');
     const _vid      = () => document.getElementById('stage-intro-video');
@@ -60,6 +61,7 @@ const VideoCtrl = (() => {
     function _clearTimers() {
         _timers.forEach(t => clearTimeout(t));
         _timers = [];
+        if (_forceTimer) { clearTimeout(_forceTimer); _forceTimer = null; }
     }
 
     /* 오버레이 즉시 표시 (검정) — 배경 완전히 덮음 */
@@ -101,35 +103,29 @@ const VideoCtrl = (() => {
 
         _clearTimers();
 
-        // 오버레이 검정으로 즉시 덮기
+        // ① 오버레이 검정으로 즉시 덮기 (배경 노출 방지)
         _showOverlay();
-
-        // fade 레이어 초기화 (검정, transition 없음)
         fade.style.transition = 'none';
-        fade.style.opacity    = '0';
+        fade.style.opacity    = '1';   // 검정으로 덮어 영상 준비 전 노출 차단
         if (glitchEl) glitchEl.classList.remove('vg-active');
 
-        // 영상 초기화 & 설정
+        // ② 영상 완전 초기화 — src 비우고 flush
         vid.pause();
         vid.removeAttribute('src');
-        vid.load(); // flush
-        vid.muted       = true;
-        vid.autoplay    = false;
-        vid.loop        = false;
-        vid.playsInline = true;
-        vid.src         = src;
+        vid.load();
 
         let started = false;
 
         function startPlayback() {
             if (started) return;
             started = true;
+            if (_forceTimer) { clearTimeout(_forceTimer); _forceTimer = null; }
 
-            vid.currentTime = 0;
-            // fade 레이어 투명으로 → 영상 보이게
-            fade.style.transition = 'opacity 0.25s ease';
+            // fade 레이어 걷어내서 영상 보이게
+            fade.style.transition = 'opacity 0.2s ease';
             fade.style.opacity    = '0';
 
+            vid.currentTime = 0;
             vid.play().catch(e => console.warn('[VideoCtrl] play failed:', e));
 
             // 지직 효과 (스테이지 인트로 전용)
@@ -138,7 +134,7 @@ const VideoCtrl = (() => {
                 _timers.push(setTimeout(() => _triggerGlitch(glitchEl, 200), 3000));
             }
 
-            // 페이드아웃 타이머
+            // 페이드아웃 → 종료
             _timers.push(setTimeout(() => {
                 fade.style.transition = 'opacity 0.5s ease';
                 fade.style.opacity    = '1';
@@ -150,31 +146,43 @@ const VideoCtrl = (() => {
                     if (glitchEl) glitchEl.classList.remove('vg-active');
 
                     if (_keepOverlay) {
-                        // 연속 재생용: 오버레이 유지한 채 onEnd 호출
                         fade.style.transition = 'none';
                         fade.style.opacity    = '1';
                         if (onEnd) onEnd();
                     } else {
-                        // 마지막 영상: 오버레이 페이드아웃 후 숨김
                         _hideOverlay(onEnd);
                     }
                 }, 500));
             }, fadeDuration));
         }
 
-        // 로딩 완료 대기
+        // ③ canplay 먼저 등록 → src 설정 → load()
+        //    (일부 브라우저에서 src 할당 직후 canplay가 동기 발화할 수 있어
+        //     반드시 리스너를 먼저 달아야 함)
+        vid.muted       = true;
+        vid.autoplay    = false;
+        vid.loop        = false;
+        vid.playsInline = true;
+
         vid.addEventListener('canplay', function onReady() {
             vid.removeEventListener('canplay', onReady);
             startPlayback();
         }, { once: true });
 
+        vid.src = src;
         vid.load();
 
-        // 이미 캐시된 경우 즉시 시작
-        if (vid.readyState >= 2) {
-            vid.removeEventListener('canplay', function(){});
+        // ④ 이미 충분히 버퍼된 경우(캐시) 즉시 시작
+        if (vid.readyState >= 3) {
             startPlayback();
+            return;
         }
+
+        // ⑤ 안전망: 3초 안에 canplay 안 오면 강제 재생
+        _forceTimer = setTimeout(() => {
+            console.warn('[VideoCtrl] canplay timeout — forcing playback:', src);
+            startPlayback();
+        }, 3000);
     }
 
     function _triggerGlitch(el, ms) {
