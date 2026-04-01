@@ -70,6 +70,7 @@ const VideoPlayer = (() => {
     /* 오버레이 보이기 (즉시, 검정) */
     function showOverlay() {
         const { overlay, fade } = getEls();
+        overlay.classList.remove('hidden');   // .hidden { display:none !important } 방어
         overlay.style.transition = 'none';
         overlay.style.opacity    = '1';
         overlay.style.visibility = 'visible';
@@ -88,6 +89,7 @@ const VideoPlayer = (() => {
         setTimeout(() => {
             overlay.style.visibility = 'hidden';
             overlay.style.display    = 'none';
+            overlay.classList.remove('hidden'); // 혹시 남은 hidden 클래스 제거
             if (cb) cb();
         }, 320);
     }
@@ -252,8 +254,9 @@ window.onload = function () {
     successPopup.classList.add('hidden');
     hintPopup.classList.add('hidden');
 
-    /* 오버레이 초기 숨김 */
+    /* 오버레이 초기 숨김 — display:none + opacity:0 (hidden 클래스 사용 안 함) */
     const ov = document.getElementById('stage-video-overlay');
+    ov.classList.remove('hidden');
     ov.style.opacity    = '0';
     ov.style.visibility = 'hidden';
     ov.style.display    = 'none';
