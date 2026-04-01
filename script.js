@@ -59,6 +59,19 @@ function preloadNextBackground(currentIndex) {
     preloadImage(nextUrl); // 결과 무시, 캐시 목적
 }
 
+// 다음 스테이지 영상 미리 fetch (브라우저 캐시에 올려두기)
+function preloadNextVideo(currentIndex) {
+    const nextIndex = currentIndex + 1;
+    if (nextIndex >= gameData.length - 1) return; // 마지막(클리어) 스테이지는 영상 없음
+    const src = STAGE_VIDEOS[nextIndex];
+    if (!src) return;
+    const link = document.createElement('link');
+    link.rel  = 'prefetch';
+    link.as   = 'video';
+    link.href = src;
+    document.head.appendChild(link);
+}
+
 window.onload = function() {
     document.body.style.backgroundImage = "url('bg_intro.webp')";
     fetchGameData(); 
@@ -92,9 +105,10 @@ function checkMissionCode() {
 function startGame() { worldviewScreen.classList.add('hidden'); loadStage(); }
 
 /* ─────────────────────────────────────────
-   🎬 스테이지 인트로: 배경 위 짧은 영상 효과
-   흐름: 영상 재생(3초) → 페이드아웃 → 게임 컨테이너 페이드인
-   각 스테이지별 영상: stage1_intro.mp4 ~ stage5_intro.mp4
+   🎬 스테이지 인트로: 스테이지별 짧은 영상 재생
+   흐름:
+     배경 preload 완료 → 영상 로딩 → 충분히 버퍼링 후 재생 시작
+     5초 풀 재생 (0.7s / 3.0s 두 번 지직) → 0.6s 검정 페이드 → 콜백
 ───────────────────────────────────────── */
 
 const STAGE_VIDEOS = [
@@ -105,8 +119,6 @@ const STAGE_VIDEOS = [
     'stage5_intro.mp4'
 ];
 
-// 스테이지 인트로 영상 재생
-// 흐름: 영상 재생(3초) + 중간에 지직 2회 → 검정 페이드아웃 → 콜백
 function showStageIntro(stageIndex, callback) {
     const overlay  = document.getElementById('stage-video-overlay');
     const videoEl  = document.getElementById('stage-intro-video');
@@ -115,63 +127,78 @@ function showStageIntro(stageIndex, callback) {
 
     const videoSrc = STAGE_VIDEOS[stageIndex] || STAGE_VIDEOS[0];
 
-    // 초기화
-    fadeEl.style.opacity = '0';
+    // ① 초기화
+    fadeEl.style.opacity  = '0';
     fadeEl.style.transition = 'none';
     glitchEl.classList.remove('vg-active');
-
-    // 오버레이 표시
     overlay.classList.remove('hidden');
 
-    // 영상 소스 설정
-    videoEl.src = videoSrc;
-    videoEl.muted = true;
-    videoEl.currentTime = 0;
+    // ② 영상 속성 설정
+    videoEl.muted    = true;
+    videoEl.autoplay = false;
+    videoEl.loop     = false;
+    videoEl.src      = videoSrc;
 
-    // 재생 시작 함수
-    function startPlay() {
-        const playPromise = videoEl.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(() => { /* 무시 */ });
-        }
-        scheduleEffects();
+    // 이전 타이머 정리용
+    let effectTimers = [];
+    function clearEffectTimers() {
+        effectTimers.forEach(t => clearTimeout(t));
+        effectTimers = [];
     }
 
-    // canplay 이벤트 대기 (로드 완료 후 재생)
-    videoEl.oncanplay = function() {
-        videoEl.oncanplay = null;
-        startPlay();
-    };
-    videoEl.load();
+    // ③ 5초 재생 + 지직 2회 + 마지막 페이드아웃
+    function startPlayback() {
+        clearEffectTimers();
+        videoEl.currentTime = 0;
 
-    // 3초 안에 canplay 안 오면 강제 시작 (네트워크 느릴 때 대비)
-    const forceTimer = setTimeout(() => {
-        if (videoEl.paused) startPlay();
-    }, 1200);
+        const playPromise = videoEl.play();
+        if (playPromise) playPromise.catch(() => {});
 
-    // 지직 효과 2회 + 마지막 페이드아웃 스케줄
-    function scheduleEffects() {
-        clearTimeout(forceTimer);
+        // 지직 1회: 0.7초
+        effectTimers.push(setTimeout(() => triggerGlitch(glitchEl, 220), 700));
+        // 지직 2회: 3.0초
+        effectTimers.push(setTimeout(() => triggerGlitch(glitchEl, 200), 3000));
 
-        // 1회차 지직: 0.7초
-        setTimeout(() => triggerGlitch(glitchEl, 220), 700);
-        // 2회차 지직: 1.8초
-        setTimeout(() => triggerGlitch(glitchEl, 200), 1800);
-
-        // 2.4초 후 검정 페이드인 (0.6초)
-        setTimeout(() => {
+        // 4.4초 후 검정 페이드인 (0.6초) → 총 5초
+        effectTimers.push(setTimeout(() => {
             fadeEl.style.transition = 'opacity 0.6s ease';
-            fadeEl.style.opacity = '1';
-            setTimeout(() => {
+            fadeEl.style.opacity    = '1';
+            effectTimers.push(setTimeout(() => {
                 videoEl.pause();
                 videoEl.src = '';
                 overlay.classList.add('hidden');
-                fadeEl.style.opacity = '0';
+                fadeEl.style.opacity   = '0';
                 fadeEl.style.transition = 'none';
                 glitchEl.classList.remove('vg-active');
                 callback();
-            }, 600);
-        }, 2400);
+            }, 600));
+        }, 4400));
+    }
+
+    // ④ 로딩 상태 감지 - readyState 3(HAVE_FUTURE_DATA) 이상이면 즉시 재생
+    //    모바일 faststart mp4 기준 보통 0.3~0.8초 내 도달
+    function tryStart() {
+        if (videoEl.readyState >= 3) {
+            startPlayback();
+            return true;
+        }
+        return false;
+    }
+
+    // ⑤ canplaythrough 이벤트로 대기
+    videoEl.oncanplaythrough = null;
+    videoEl.oncanplay        = null;
+
+    videoEl.addEventListener('canplay', function onReady() {
+        videoEl.removeEventListener('canplay', onReady);
+        startPlayback();
+    }, { once: true });
+
+    videoEl.load();
+
+    // ⑥ load() 직후 이미 버퍼 충분하면 바로 시작 (캐시된 경우)
+    if (tryStart()) {
+        videoEl.removeEventListener('canplay', () => {});
     }
 }
 
@@ -313,8 +340,9 @@ function loadStage() {
             mainContainer.style.opacity = '1';
         });
 
-        // ⑦ 다음 스테이지 배경 미리 캐싱 (백그라운드)
+        // ⑦ 다음 스테이지 배경·영상 미리 캐싱 (백그라운드)
         preloadNextBackground(currentStageIndex);
+        preloadNextVideo(currentStageIndex);
     }); // introFn 끝
     }); // preloadImage 끝
 }
