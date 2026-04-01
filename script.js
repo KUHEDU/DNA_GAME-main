@@ -106,47 +106,79 @@ const STAGE_VIDEOS = [
 ];
 
 // 스테이지 인트로 영상 재생
-// 1) 스테이지 배경을 body에 적용
-// 2) 해당 스테이지 영상을 오버레이로 재생 (약 3초)
-// 3) 페이드아웃 후 게임 컨테이너 페이드인
+// 흐름: 영상 재생(3초) + 중간에 지직 2회 → 검정 페이드아웃 → 콜백
 function showStageIntro(stageIndex, callback) {
     const overlay  = document.getElementById('stage-video-overlay');
     const videoEl  = document.getElementById('stage-intro-video');
     const fadeEl   = document.getElementById('stage-video-fade');
+    const glitchEl = document.getElementById('video-glitch-layer');
 
     const videoSrc = STAGE_VIDEOS[stageIndex] || STAGE_VIDEOS[0];
 
-    // 영상 소스 설정 및 오버레이 표시
-    videoEl.src = videoSrc;
-    videoEl.currentTime = 0;
+    // 초기화
     fadeEl.style.opacity = '0';
     fadeEl.style.transition = 'none';
+    glitchEl.classList.remove('vg-active');
 
-    overlay.classList.remove('hidden', 'svo-fadeout');
-    overlay.style.opacity = '1';
+    // 오버레이 표시
+    overlay.classList.remove('hidden');
 
-    // 영상 로드 후 재생
+    // 영상 소스 설정
+    videoEl.src = videoSrc;
+    videoEl.muted = true;
+    videoEl.currentTime = 0;
+
+    // 재생 시작 함수
+    function startPlay() {
+        const playPromise = videoEl.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(() => { /* 무시 */ });
+        }
+        scheduleEffects();
+    }
+
+    // canplay 이벤트 대기 (로드 완료 후 재생)
+    videoEl.oncanplay = function() {
+        videoEl.oncanplay = null;
+        startPlay();
+    };
     videoEl.load();
-    videoEl.play().catch(() => {
-        // autoplay 실패 시에도 3초 후 콜백
-    });
 
-    // 2.4초 후 페이드 오버레이(검정) 페이드인 → 영상 위를 덮어 자연스럽게 전환
-    setTimeout(() => {
-        fadeEl.style.transition = 'opacity 0.6s ease';
-        fadeEl.style.opacity = '1';
+    // 3초 안에 canplay 안 오면 강제 시작 (네트워크 느릴 때 대비)
+    const forceTimer = setTimeout(() => {
+        if (videoEl.paused) startPlay();
+    }, 1200);
 
-        // 0.6초 후 오버레이 제거 & 콜백
+    // 지직 효과 2회 + 마지막 페이드아웃 스케줄
+    function scheduleEffects() {
+        clearTimeout(forceTimer);
+
+        // 1회차 지직: 0.7초
+        setTimeout(() => triggerGlitch(glitchEl, 220), 700);
+        // 2회차 지직: 1.8초
+        setTimeout(() => triggerGlitch(glitchEl, 200), 1800);
+
+        // 2.4초 후 검정 페이드인 (0.6초)
         setTimeout(() => {
-            videoEl.pause();
-            videoEl.src = '';
-            overlay.classList.add('hidden');
-            overlay.style.opacity = '';
-            fadeEl.style.opacity = '0';
-            fadeEl.style.transition = 'none';
-            callback();
-        }, 600);
-    }, 2400);
+            fadeEl.style.transition = 'opacity 0.6s ease';
+            fadeEl.style.opacity = '1';
+            setTimeout(() => {
+                videoEl.pause();
+                videoEl.src = '';
+                overlay.classList.add('hidden');
+                fadeEl.style.opacity = '0';
+                fadeEl.style.transition = 'none';
+                glitchEl.classList.remove('vg-active');
+                callback();
+            }, 600);
+        }, 2400);
+    }
+}
+
+// 지직 한 번 번쩍이기
+function triggerGlitch(el, durationMs) {
+    el.classList.add('vg-active');
+    setTimeout(() => el.classList.remove('vg-active'), durationMs);
 }
 
 /* ─────────────────────────────────────────
