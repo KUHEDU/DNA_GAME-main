@@ -73,10 +73,11 @@ function checkMissionCode() {
 function startGame() { worldviewScreen.classList.add('hidden'); loadStage(); }
 
 /* ─────────────────────────────────────────
-   📺 TV 노이즈 인트로 관련 함수
+   📺 스테이지 인트로: 배경 위 지직 효과
+   흐름: 배경 표시 → 지직거리며 3초 → 게임 컨테이너 페이드인
 ───────────────────────────────────────── */
 
-// 노이즈 캔버스 렌더링 (매 프레임 랜덤 픽셀)
+// 노이즈 캔버스: 낮은 해상도로 픽셀 노이즈 렌더링 (배경 위에 살짝만)
 function renderNoise(canvas) {
     const ctx = canvas.getContext('2d');
     const W = canvas.width;
@@ -85,70 +86,76 @@ function renderNoise(canvas) {
     const data = imageData.data;
     for (let i = 0; i < data.length; i += 4) {
         const v = Math.random() * 255 | 0;
-        data[i]     = v;
-        data[i + 1] = v;
-        data[i + 2] = v;
-        data[i + 3] = 255;
+        data[i] = v; data[i+1] = v; data[i+2] = v;
+        data[i+3] = 255;
     }
     ctx.putImageData(imageData, 0, 0);
 }
 
-// 가로로 흔들리는 글리치 라인 가끔 추가
+// 간헐적 글리치 가로선: 가끔만 등장해서 지직 느낌
 function maybeGlitchLine(canvas) {
-    if (Math.random() > 0.85) {
+    if (Math.random() > 0.92) { // 8% 확률로만 등장
         const ctx = canvas.getContext('2d');
         const y = Math.random() * canvas.height | 0;
-        const h = (Math.random() * 6 + 1) | 0;
-        ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.25})`;
+        const h = (Math.random() * 3 + 1) | 0;
+        ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.15})`;
         ctx.fillRect(0, y, canvas.width, h);
     }
 }
 
-// 스테이지 인트로 실행: 배경 표시 + 5초 노이즈 후 게임화면 등장
+// 스테이지 인트로 실행
+// 1) 스테이지 배경을 body에 적용 (전면에 보이도록)
+// 2) game-container는 숨긴 채 지직 오버레이만 올림
+// 3) 3초 후 지직 페이드아웃 → 게임 컨테이너 페이드인
 function showStageIntro(stageIndex, callback) {
-    const introEl  = document.getElementById('stage-intro-screen');
+    const glitchEl = document.getElementById('glitch-overlay');
     const canvas   = document.getElementById('noise-canvas');
+    const mainUI   = document.getElementById('main-ui');
 
-    // 캔버스 해상도: 성능을 위해 낮은 해상도 사용 (픽셀 늘리기)
-    canvas.width  = 160;
-    canvas.height = 284;
-
-    // 스테이지 배경을 body에 적용 (인트로 화면에서도 보이게)
+    // ① 스테이지 배경 먼저 적용 (배경이 주인공)
     if (stageIndex === gameData.length - 1) {
         document.body.style.backgroundImage = "url('bg_clear.png')";
     } else {
         document.body.style.backgroundImage = `url('bg_stage${stageIndex + 1}.png')`;
     }
 
-    // 인트로 화면 표시
-    introEl.classList.remove('hidden');
-    introEl.classList.remove('fade-out');
-    introEl.style.opacity = '1';
+    // ② 게임 컨테이너 완전히 숨겨서 배경만 보이게
+    mainUI.style.opacity = '0';
+    mainUI.style.transition = 'none';
 
-    // 노이즈 루프 시작
+    // ③ 캔버스 저해상도 설정 (픽셀 뭉개짐으로 레트로 노이즈 느낌)
+    canvas.width  = 120;
+    canvas.height = 213;
+
+    // ④ 지직 오버레이 표시
+    glitchEl.classList.remove('hidden', 'fade-out');
+    glitchEl.style.opacity = '1';
+
+    // ⑤ 노이즈 루프 시작
     if (noiseAnimId) cancelAnimationFrame(noiseAnimId);
-    let frameCount = 0;
+    let frame = 0;
     function noiseLoop() {
-        renderNoise(canvas);
-        if (frameCount % 3 === 0) maybeGlitchLine(canvas); // 3프레임마다 글리치
-        frameCount++;
+        // 매 2프레임마다 노이즈 갱신 (너무 빠르지 않게)
+        if (frame % 2 === 0) renderNoise(canvas);
+        maybeGlitchLine(canvas);
+        frame++;
         noiseAnimId = requestAnimationFrame(noiseLoop);
     }
     noiseLoop();
 
-    // 4.2초 후 페이드아웃 시작 (총 5초 = 4.2s 노이즈 + 0.8s 페이드)
+    // ⑥ 2.4초 후 지직 페이드아웃 시작 (총 3초 = 2.4s + 0.6s 페이드)
     setTimeout(() => {
-        introEl.classList.add('fade-out');
+        glitchEl.classList.add('fade-out');
 
-        // 페이드아웃 완료 후 노이즈 중단 + 콜백(게임화면 표시)
+        // ⑦ 페이드아웃 완료 후: 노이즈 중단 + 게임 컨테이너 등장
         setTimeout(() => {
             cancelAnimationFrame(noiseAnimId);
             noiseAnimId = null;
-            introEl.classList.add('hidden');
-            introEl.classList.remove('fade-out');
-            callback();
-        }, 800);
-    }, 4200);
+            glitchEl.classList.add('hidden');
+            glitchEl.classList.remove('fade-out');
+            callback(); // → loadStage 콜백에서 컨테이너 페이드인
+        }, 600);
+    }, 2400);
 }
 
 function loadStage() {
@@ -175,11 +182,15 @@ function loadStage() {
     gameScreen.classList.add('hidden');
 
     showStageIntro(currentStageIndex, () => {
-        // 노이즈 끝난 뒤 게임화면 표시
+        // 지직 끝 → 게임 컨테이너 부드럽게 등장
         gameScreen.classList.remove('hidden');
         gameScreen.classList.remove('fade-in');
         void gameScreen.offsetWidth; // reflow 강제 (애니메이션 리셋)
         gameScreen.classList.add('fade-in');
+
+        // mainUI 페이드인
+        mainUI.style.transition = 'opacity 0.7s ease';
+        mainUI.style.opacity = '1';
         window.scrollTo(0, 0);
 
         if (currentStageIndex === gameData.length - 1) {

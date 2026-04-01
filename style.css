@@ -111,34 +111,36 @@ input[type="text"] { flex: 2; padding: 12px; border-radius: 6px; border: 1px sol
 @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
 
 /* ========================================
-   📺 스테이지 인트로: TV 노이즈 전체화면
+   📺 스테이지 인트로: 배경 위에 살짝 얹히는 지직 효과
+   - 배경(body background)은 그대로 보이고
+   - 이 오버레이는 투명하게 위에 올라감
    ======================================== */
-#stage-intro-screen {
+#glitch-overlay {
     position: fixed;
     top: 0; left: 0;
     width: 100vw; height: 100vh;
     z-index: 9999;
-    background-color: #000;
+    background: transparent; /* 배경 보이게 투명 유지 */
     overflow: hidden;
-    /* 페이드아웃용 트랜지션 */
-    opacity: 1;
-    transition: opacity 0.8s ease;
-}
-#stage-intro-screen.fade-out {
-    opacity: 0;
     pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.6s ease;
+}
+#glitch-overlay.fade-out {
+    opacity: 0;
 }
 
-/* 노이즈 캔버스: 전체화면 꽉 채움 */
+/* 노이즈 캔버스: 배경 위에 반투명하게 살짝만 */
 #noise-canvas {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
     display: block;
-    opacity: 0.18;
+    opacity: 0.10; /* 낮게 유지 → 배경이 주인공 */
+    mix-blend-mode: screen;
 }
 
-/* 스캔라인 효과: 가로줄 반복 */
+/* 스캔라인: 미세한 가로줄 */
 #noise-scanline {
     position: absolute;
     top: 0; left: 0;
@@ -146,55 +148,43 @@ input[type="text"] { flex: 2; padding: 12px; border-radius: 6px; border: 1px sol
     background: repeating-linear-gradient(
         to bottom,
         transparent 0px,
-        transparent 3px,
-        rgba(0, 0, 0, 0.25) 3px,
-        rgba(0, 0, 0, 0.25) 4px
+        transparent 2px,
+        rgba(0, 0, 0, 0.08) 2px,
+        rgba(0, 0, 0, 0.08) 3px
     );
     pointer-events: none;
     z-index: 1;
 }
 
-/* 비네팅 효과: 가장자리 어둡게 */
-#noise-vignette {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: radial-gradient(
-        ellipse at center,
-        transparent 55%,
-        rgba(0, 0, 0, 0.7) 100%
-    );
-    pointer-events: none;
-    z-index: 2;
-}
-
-/* 화면 깜빡임 효과 */
+/* 깜빡임: 간헐적으로 화면 흔들리는 느낌 */
 #noise-flicker {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 100%;
     background: rgba(255, 255, 255, 0);
     pointer-events: none;
-    z-index: 3;
-    animation: flicker 0.15s infinite;
+    z-index: 2;
+    animation: glitch-flicker 2.5s infinite;
 }
-@keyframes flicker {
-    0%   { background: rgba(255,255,255,0.00); }
-    10%  { background: rgba(255,255,255,0.03); }
-    20%  { background: rgba(255,255,255,0.00); }
-    35%  { background: rgba(255,255,255,0.05); }
-    50%  { background: rgba(255,255,255,0.00); }
-    65%  { background: rgba(255,255,255,0.02); }
-    80%  { background: rgba(255,255,255,0.00); }
-    90%  { background: rgba(255,255,255,0.04); }
-    100% { background: rgba(255,255,255,0.00); }
+@keyframes glitch-flicker {
+    0%   { background: rgba(255,255,255,0.00); transform: translateX(0); }
+    4%   { background: rgba(255,255,255,0.06); transform: translateX(-2px); }
+    5%   { background: rgba(255,255,255,0.00); transform: translateX(0); }
+    30%  { background: rgba(255,255,255,0.00); transform: translateX(0); }
+    31%  { background: rgba(255,255,255,0.04); transform: translateX(3px); }
+    32%  { background: rgba(0,0,0,0.05);        transform: translateX(-1px); }
+    33%  { background: rgba(255,255,255,0.00); transform: translateX(0); }
+    70%  { background: rgba(255,255,255,0.00); transform: translateX(0); }
+    71%  { background: rgba(255,255,255,0.07); transform: translateX(2px); }
+    72%  { background: rgba(255,255,255,0.00); transform: translateX(0); }
+    100% { background: rgba(255,255,255,0.00); transform: translateX(0); }
 }
 
-/* 게임화면 페이드인 */
+/* 게임 컨테이너 등장 애니메이션 */
 #game-screen.fade-in {
-    animation: screenFadeIn 0.8s ease forwards;
+    animation: screenFadeIn 0.7s ease forwards;
 }
 @keyframes screenFadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
 }
