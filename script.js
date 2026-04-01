@@ -40,8 +40,28 @@ async function fetchGameData() {
     } catch (error) { console.error("데이터 연동 실패:", error); }
 }
 
+// 배경 이미지 preload 유틸 (Promise 반환, 로딩 완료 후 resolve)
+function preloadImage(url) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(url);
+        img.onerror = () => resolve(url); // 실패해도 진행
+        img.src = url;
+    });
+}
+
+// 다음 스테이지 배경 이미지 미리 캐싱 (백그라운드 preload)
+function preloadNextBackground(currentIndex) {
+    const nextIndex = currentIndex + 1;
+    if (nextIndex >= gameData.length) return;
+    const nextUrl = (nextIndex === gameData.length - 1)
+        ? 'bg_clear.webp'
+        : `bg_stage${nextIndex + 1}.webp`;
+    preloadImage(nextUrl); // 결과 무시, 캐시 목적
+}
+
 window.onload = function() {
-    document.body.style.backgroundImage = "url('bg_intro.png')";
+    document.body.style.backgroundImage = "url('bg_intro.webp')";
     fetchGameData(); 
     successPopup.classList.add('hidden');
     hintPopup.classList.add('hidden');
@@ -50,7 +70,7 @@ window.onload = function() {
 function showWorldview() {
     introScreen.classList.add('hidden');
     worldviewScreen.classList.remove('hidden');
-    document.body.style.backgroundImage = "url('bg_default.png')";
+    document.body.style.backgroundImage = "url('bg_default.webp')";
     const video = document.getElementById('prologue-video');
     video.play().catch(() => { video.muted = true; video.play(); });
     window.scrollTo(0, 0); // 💡 상단 이동
@@ -167,18 +187,20 @@ function loadStage() {
     mainContainer.classList.remove('corona-effect');
     storyBox.classList.remove('clear-mode');
 
-    // ① 배경 미리 적용 (지직 효과 동안 배경이 보여야 하므로)
-    if (currentStageIndex === gameData.length - 1) {
-        document.body.style.backgroundImage = "url('bg_clear.png')";
-    } else {
-        document.body.style.backgroundImage = `url('bg_stage${currentStageIndex + 1}.png')`;
-    }
+    // ① 배경 이미지 URL 결정 (WebP 우선)
+    const bgUrl = (currentStageIndex === gameData.length - 1)
+        ? 'bg_clear.webp'
+        : `bg_stage${currentStageIndex + 1}.webp`;
 
     // ② game-container를 투명하게만 (display는 유지 → 나중에 opacity로 페이드인)
     mainContainer.style.opacity = '0';
     mainContainer.style.transition = 'none';
 
-    // ③ 지직 효과 실행 (배경은 보이고, 컨테이너만 투명)
+    // ③ 배경 이미지 preload 완료 후 배경 적용 + 지직 효과 시작
+    preloadImage(bgUrl).then(() => {
+        document.body.style.backgroundImage = `url('${bgUrl}')`;
+
+    // ④ 지직 효과 실행 (배경 로딩 완료 후 시작)
     showStageIntro(currentStageIndex, () => {
 
         // ④ 지직 끝 → 스테이지 내용 세팅 후 페이드인
@@ -213,7 +235,11 @@ function loadStage() {
             mainContainer.style.transition = 'opacity 0.7s ease';
             mainContainer.style.opacity = '1';
         });
-    });
+
+        // ⑥ 다음 스테이지 배경 미리 캐싱 (백그라운드)
+        preloadNextBackground(currentStageIndex);
+    }); // showStageIntro 끝
+    }); // preloadImage 끝
 }
 
 function showMission() {
