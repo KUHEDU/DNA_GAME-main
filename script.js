@@ -213,9 +213,9 @@ function triggerGlitch(el, durationMs) {
    흐름:
      0.15s : 황금 플래시 폭발
      0.4s  : 빛줄기 + 텍스트 팝 등장
-     1.4s  : 오버레이 페이드아웃 (배경 드러남)
-     1.9s  : 오버레이 완전 제거 → 배경만 2초 노출
-     3.9s  : 스토리박스(mainContainer) 페이드인
+     1.4s  : 오버레이 페이드아웃
+     1.9s  : 오버레이 제거 → 클리어 영상 5초 재생
+     6.9s  : 영상 페이드아웃 → 스토리박스 등장
 ───────────────────────────────────────── */
 function showClearIntro(stageIndex, callback) {
     const overlay = document.getElementById('clear-intro-overlay');
@@ -254,17 +254,64 @@ function showClearIntro(stageIndex, callback) {
         ring.classList.add('ci-ring-show');
     }, 400);
 
-    // ⑦ 1.4s: 오버레이 페이드아웃 시작 → 배경화면이 드러남
+    // ⑦ 1.4s: 오버레이 페이드아웃 시작
     setTimeout(() => overlay.classList.add('ci-fadeout'), 1400);
 
-    // ⑧ 1.9s: 오버레이 완전 제거 → 배경만 보이는 상태 진입
+    // ⑧ 1.9s: 오버레이 제거 → 클리어 영상 재생
     setTimeout(() => {
         overlay.classList.add('hidden');
         overlay.classList.remove('ci-fadeout');
         overlay.innerHTML = '';
-        // ⑨ 배경화면을 2초간 노출 후 스토리박스 등장
-        setTimeout(() => callback(), 2000);
+        // ⑨ 클리어 영상 5초 재생 후 콜백
+        playClearVideo(callback);
     }, 1900);
+}
+
+// 클리어 영상 재생 (지직 없이, 5초 풀재생 후 페이드아웃)
+function playClearVideo(callback) {
+    const overlay = document.getElementById('stage-video-overlay');
+    const videoEl = document.getElementById('stage-intro-video');
+    const fadeEl  = document.getElementById('stage-video-fade');
+
+    fadeEl.style.opacity   = '0';
+    fadeEl.style.transition = 'none';
+    overlay.classList.remove('hidden');
+
+    videoEl.muted    = true;
+    videoEl.autoplay = false;
+    videoEl.loop     = false;
+    videoEl.src      = 'clear_intro.mp4';
+
+    let timers = [];
+
+    function startClearPlay() {
+        videoEl.currentTime = 0;
+        const p = videoEl.play();
+        if (p) p.catch(() => {});
+
+        // 4.4s 후 검정 페이드인 (0.6s) → 총 5초
+        timers.push(setTimeout(() => {
+            fadeEl.style.transition = 'opacity 0.6s ease';
+            fadeEl.style.opacity    = '1';
+            timers.push(setTimeout(() => {
+                videoEl.pause();
+                videoEl.src = '';
+                overlay.classList.add('hidden');
+                fadeEl.style.opacity   = '0';
+                fadeEl.style.transition = 'none';
+                callback();
+            }, 600));
+        }, 4400));
+    }
+
+    videoEl.addEventListener('canplay', function onReady() {
+        videoEl.removeEventListener('canplay', onReady);
+        startClearPlay();
+    }, { once: true });
+
+    videoEl.load();
+    // 캐시된 경우 즉시 시작
+    if (videoEl.readyState >= 3) startClearPlay();
 }
 
 function loadStage() {

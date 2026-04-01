@@ -474,45 +474,53 @@ input[type="text"] {
     display: flex; align-items: center; justify-content: center;
     overflow: hidden; pointer-events: none;
     transition: opacity 0.8s ease;
+    /* 효과 중심점을 화면 38% 높이로 올림 */
+    padding-bottom: 24vh;
 }
 #clear-intro-overlay.ci-fadeout { opacity: 0; }
 
 .ci-flash {
-    position: absolute; top: 50%; left: 50%;
+    position: absolute;
+    top: 50%; left: 50%;
     transform: translate(-50%, -50%) scale(0);
-    width: 20px; height: 20px; border-radius: 50%;
+    width: 30px; height: 30px; border-radius: 50%;
     background: radial-gradient(circle, #fff 0%, #ffe066 30%, #ff8c00 70%, transparent 100%);
     opacity: 0; transition: none;
 }
 .ci-flash.ci-flash-burst { animation: flashBurst 0.5s ease-out forwards; }
 @keyframes flashBurst {
-    0%   { transform: translate(-50%, -50%) scale(0);   opacity: 1; }
-    40%  { transform: translate(-50%, -50%) scale(60);  opacity: 0.9; }
-    100% { transform: translate(-50%, -50%) scale(120); opacity: 0; }
+    0%   { transform: translate(-50%, -50%) scale(0);    opacity: 1; }
+    40%  { transform: translate(-50%, -50%) scale(80);   opacity: 0.95; }
+    100% { transform: translate(-50%, -50%) scale(160);  opacity: 0; }
 }
 
 .ci-rays {
-    position: absolute; top: 50%; left: 50%;
-    width: 600px; height: 600px;
+    position: absolute;
+    top: 50%; left: 50%;
+    /* 화면을 가득 덮을 크기 - 대각선 길이 이상 */
+    width: max(220vw, 220vh);
+    height: max(220vw, 220vh);
     transform: translate(-50%, -50%) rotate(0deg) scale(0);
     opacity: 0;
     background: conic-gradient(
-        rgba(255,220,50,0.55) 0deg,   transparent 18deg,
-        rgba(255,220,50,0.55) 36deg,  transparent 54deg,
-        rgba(255,220,50,0.55) 72deg,  transparent 90deg,
-        rgba(255,220,50,0.55) 108deg, transparent 126deg,
-        rgba(255,220,50,0.55) 144deg, transparent 162deg,
-        rgba(255,220,50,0.55) 180deg, transparent 198deg,
-        rgba(255,220,50,0.55) 216deg, transparent 234deg,
-        rgba(255,220,50,0.55) 252deg, transparent 270deg,
-        rgba(255,220,50,0.55) 288deg, transparent 306deg,
-        rgba(255,220,50,0.55) 324deg, transparent 342deg,
-        rgba(255,220,50,0.55) 360deg
+        rgba(255,220,50,0.60) 0deg,   transparent 15deg,
+        rgba(255,220,50,0.60) 30deg,  transparent 45deg,
+        rgba(255,220,50,0.60) 60deg,  transparent 75deg,
+        rgba(255,220,50,0.60) 90deg,  transparent 105deg,
+        rgba(255,220,50,0.60) 120deg, transparent 135deg,
+        rgba(255,220,50,0.60) 150deg, transparent 165deg,
+        rgba(255,220,50,0.60) 180deg, transparent 195deg,
+        rgba(255,220,50,0.60) 210deg, transparent 225deg,
+        rgba(255,220,50,0.60) 240deg, transparent 255deg,
+        rgba(255,220,50,0.60) 270deg, transparent 285deg,
+        rgba(255,220,50,0.60) 300deg, transparent 315deg,
+        rgba(255,220,50,0.60) 330deg, transparent 345deg,
+        rgba(255,220,50,0.60) 360deg
     );
     border-radius: 50%; transition: none;
 }
 .ci-rays.ci-rays-show {
-    animation: raysAppear 0.4s ease-out forwards, raysSpin 6s linear 0.4s infinite;
+    animation: raysAppear 0.4s ease-out forwards, raysSpin 8s linear 0.4s infinite;
 }
 @keyframes raysAppear {
     from { transform: translate(-50%, -50%) rotate(0deg) scale(0); opacity: 0; }
@@ -524,33 +532,34 @@ input[type="text"] {
 }
 
 .ci-ring {
-    position: absolute; top: 50%; left: 50%;
-    width: 80px; height: 80px;
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 120px; height: 120px;
     transform: translate(-50%, -50%) scale(0);
     border-radius: 50%;
-    border: 4px solid rgba(255,220,50,0.9);
-    box-shadow: 0 0 30px rgba(255,200,0,0.8), inset 0 0 20px rgba(255,200,0,0.4);
+    border: 6px solid rgba(255,220,50,0.95);
+    box-shadow: 0 0 40px rgba(255,200,0,0.9), inset 0 0 30px rgba(255,200,0,0.5);
     opacity: 0;
 }
 .ci-ring.ci-ring-show {
-    animation: ringPulse 0.5s ease-out forwards, ringGlow 1.5s ease-in-out 0.5s infinite alternate;
+    animation: ringPulse 0.6s ease-out forwards, ringGlow 1.5s ease-in-out 0.6s infinite alternate;
 }
 @keyframes ringPulse {
     from { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-    to   { transform: translate(-50%, -50%) scale(5); opacity: 0.6; }
+    to   { transform: translate(-50%, -50%) scale(8); opacity: 0.5; }
 }
 @keyframes ringGlow {
-    from { box-shadow: 0 0 20px rgba(255,200,0,0.6); }
-    to   { box-shadow: 0 0 60px rgba(255,200,0,1), 0 0 100px rgba(255,140,0,0.5); }
+    from { box-shadow: 0 0 30px rgba(255,200,0,0.7); }
+    to   { box-shadow: 0 0 80px rgba(255,200,0,1), 0 0 140px rgba(255,140,0,0.6); }
 }
 
 .ci-label {
     position: relative; z-index: 10;
     text-align: center;
-    font-size: clamp(1.6rem, 6vw, 2.2rem);
+    font-size: clamp(2.0rem, 8vw, 3.0rem);
     font-weight: 900; line-height: 1.3; letter-spacing: 4px;
     color: #fff;
-    text-shadow: 0 0 20px rgba(255,220,50,1), 0 0 40px rgba(255,140,0,0.9), 0 0 70px rgba(255,100,0,0.6);
+    text-shadow: 0 0 20px rgba(255,220,50,1), 0 0 40px rgba(255,140,0,0.9), 0 0 80px rgba(255,100,0,0.7);
     transform: scale(0.3); opacity: 0; filter: blur(8px);
 }
 .ci-label.ci-label-show { animation: labelPop 0.5s cubic-bezier(0.175,0.885,0.32,1.275) forwards; }
