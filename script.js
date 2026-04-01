@@ -293,7 +293,7 @@ function showWorldview() {
         VIDEOS.intro,
         { glitch: false, fadeDuration: 4400 },
         () => {
-            document.body.style.backgroundImage = "url('bg_default.webp')";
+            document.body.style.backgroundImage = "url('bg_intro.webp')";
             worldviewScreen.classList.remove('hidden');
             mainContainer.style.transition = 'opacity 0.5s ease';
             mainContainer.style.opacity    = '1';
