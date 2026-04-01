@@ -180,6 +180,7 @@ function loadStage() {
     inputSection.classList.add('hidden');
     messageEl.innerText = "";
     inputEl.value = "";
+    if (celebrationTimer) { clearInterval(celebrationTimer); celebrationTimer = null; }
     celebrationOverlay.classList.add('hidden');
     celebrationOverlay.innerHTML = '';
     successPopup.classList.add('hidden');
@@ -281,18 +282,36 @@ function closePopupAndNext() { successPopup.classList.add('hidden'); currentStag
 function showHint() { hintTextEl.innerText = gameData[currentStageIndex].hint; hintPopup.classList.remove('hidden'); }
 function closeHint() { hintPopup.classList.add('hidden'); }
 
+let celebrationTimer = null;
+
 function showCelebrationEffect() {
     celebrationOverlay.classList.remove('hidden');
-    for (let i = 0; i < 100; i++) { createParticle(); }
+    // 시간차를 두고 분산 생성 (0~3초 사이에 20개를 펼침)
+    for (let i = 0; i < 20; i++) {
+        setTimeout(() => createParticle(), Math.random() * 3000);
+    }
+    // 이후 지속적으로 소량씩 생성 (1초당 3~4개)
+    celebrationTimer = setInterval(() => {
+        if (currentStageIndex === gameData.length - 1) {
+            const count = Math.floor(Math.random() * 2) + 3;
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => createParticle(), Math.random() * 800);
+            }
+        } else {
+            clearInterval(celebrationTimer);
+        }
+    }, 1000);
 }
+
 function createParticle() {
     const particle = document.createElement('div');
     particle.className = 'particle';
     particle.innerHTML = Math.random() > 0.5 ? '🧬' : '⭐';
     particle.style.left = `${Math.random() * 100}vw`;
-    particle.style.animationDuration = `${Math.random() * 3 + 4}s`;
+    const duration = Math.random() * 3 + 4; // 4~7초
+    particle.style.animationDuration = `${duration}s`;
     particle.style.fontSize = `${Math.random() * 1.5 + 1}rem`;
-    particle.style.color = '#ffd700';
     celebrationOverlay.appendChild(particle);
-    setTimeout(() => { particle.remove(); if (currentStageIndex === gameData.length - 1) createParticle(); }, 5000);
+    // 떨어지고 나면 DOM에서 제거
+    setTimeout(() => particle.remove(), duration * 1000 + 200);
 }
