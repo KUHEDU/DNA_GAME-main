@@ -316,7 +316,7 @@ input[type="text"] {
 }
 
 .golden-glow-animated {
-    font-size: clamp(1.0rem, 3.6vw, 1.4rem);
+    font-size: clamp(1.4rem, 5.0vw, 2.0rem);
     font-weight: bold;
     background: linear-gradient(to bottom, #fff, #f1e05a, #b8860b);
     -webkit-background-clip: text; background-clip: text;
@@ -513,7 +513,7 @@ input[type="text"] {
 .mission-clear-badge {
     display: block;
     margin-top: var(--sp-sm);
-    font-size: clamp(0.80rem, 2.8vw, 1.0rem);
+    font-size: clamp(1.0rem, 3.6vw, 1.3rem);
     font-weight: 900; letter-spacing: 3px;
     background: linear-gradient(90deg, #b8860b, #ffd700, #ffe066, #ffd700, #b8860b);
     background-size: 200% auto;
