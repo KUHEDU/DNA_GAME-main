@@ -19,11 +19,11 @@ body {
 .game-container {
     width: 92%; max-width: 500px;
     margin: 20px auto; /* 상하 여백 추가하여 짤림 방지 */
-    background-color: rgba(13, 17, 23, 0.2) !important; 
-    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    background-color: rgba(141, 141, 141, 0.1) !important; 
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(1px);
     padding: 25px; border-radius: 15px;
     box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
-    border: 1px solid rgba(48, 54, 61, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     position: relative; z-index: 10;
     display: flex; flex-direction: column;
     min-height: auto; /* 내용만큼 늘어남 */
@@ -42,7 +42,7 @@ body {
 }
 .title-bottom { font-size: 0.9rem; font-weight: bold; color: #58a6ff; letter-spacing: 2px; margin-top: 5px; opacity: 0.9; }
 
-h1#hospital-logo { color: #3fb950; font-size: 1.1rem; text-align: center; margin-top: 35px; margin-bottom: 5px; }
+h1#hospital-logo { color: #ffffff; font-size: 1.1rem; text-align: center; margin-top: 35px; margin-bottom: 5px; }
 #intro-screen h1#hospital-logo { margin-top: 0; }
 
 .corona-effect { border: 1px solid rgba(255, 255, 255, 0.8) !important; animation: corona-pulse 4s infinite alternate; background-color: rgba(0, 0, 0, 0.4) !important; }
@@ -52,7 +52,7 @@ h1#hospital-logo { color: #3fb950; font-size: 1.1rem; text-align: center; margin
 }
 
 .security-badge { font-size: 0.65rem; color: #ff3e3e; text-align: center; letter-spacing: 2px; margin-bottom: 10px; font-weight: bold; }
-.intro-subtitle { color: #8b949e !important; font-size: 1rem !important; }
+.intro-subtitle { color: #ff8787 !important; font-size: 1rem !important; }
 .intro-box { border-left: 4px solid #ff3e3e !important; background: rgba(255, 0, 0, 0.05) !important; }
 .pulse-btn { animation: pulse-green 2s infinite; }
 @keyframes pulse-green {
@@ -77,8 +77,8 @@ h1#hospital-logo { color: #3fb950; font-size: 1.1rem; text-align: center; margin
 .emergency-alert { color: #ff3e3e !important; font-size: 1.1rem !important; text-align: center; animation: blink 1s infinite; }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-h2 { color: #8b949e; font-size: 1.1rem; text-align: center; margin: 10px 0 5px 0; }
-.stage-subtitle { font-size: 1.6rem; color: #58a6ff; display: block; margin-top: 5px; font-weight: bold; text-shadow: 0 0 15px rgba(88, 166, 255, 0.4); }
+h2 { color: #ffee00; font-size: 1.1rem; text-align: center; margin: 10px 0 5px 0; }
+.stage-subtitle { font-size: 1.6rem; color: #00ff0d; display: block; margin-top: 5px; font-weight: bold; text-shadow: 0 0 15px rgba(0, 119, 255, 0.4); }
 hr { border: none; border-top: 1px solid #30363d; margin: 12px 0; flex-shrink: 0; }
 
 #video-container { width: 65%; margin: 0 auto 15px auto; aspect-ratio: 9 / 16; overflow: hidden; border-radius: 10px; background: #000; border: 1px solid #30363d; flex-shrink: 0; }
