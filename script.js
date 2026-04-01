@@ -167,6 +167,59 @@ function showStageIntro(stageIndex, callback) {
     }, 2400);
 }
 
+/* ─────────────────────────────────────────
+   🏆 미션 클리어 전환 효과
+   흐름: 검은 화면 → 황금 플래시 폭발 → 빛 잔광 → 페이드아웃 → 콘텐츠 등장
+   총 2.8초
+───────────────────────────────────────── */
+function showClearIntro(stageIndex, callback) {
+    const overlay = document.getElementById('clear-intro-overlay');
+    overlay.innerHTML = '';
+    overlay.classList.remove('hidden');
+
+    // ① 황금 플래시 레이어
+    const flash = document.createElement('div');
+    flash.className = 'ci-flash';
+    overlay.appendChild(flash);
+
+    // ② 빛줄기 방사 레이어 (CSS animation)
+    const rays = document.createElement('div');
+    rays.className = 'ci-rays';
+    overlay.appendChild(rays);
+
+    // ③ 중앙 텍스트
+    const label = document.createElement('div');
+    label.className = 'ci-label';
+    label.innerHTML = '🏆<br>MISSION<br>CLEAR';
+    overlay.appendChild(label);
+
+    // ④ 외곽 링 펄스
+    const ring = document.createElement('div');
+    ring.className = 'ci-ring';
+    overlay.appendChild(ring);
+
+    // ⑤ 0.15초: 플래시 폭발
+    setTimeout(() => flash.classList.add('ci-flash-burst'), 150);
+
+    // ⑥ 0.4초: 빛줄기 + 텍스트 등장
+    setTimeout(() => {
+        rays.classList.add('ci-rays-show');
+        label.classList.add('ci-label-show');
+        ring.classList.add('ci-ring-show');
+    }, 400);
+
+    // ⑦ 2.0초: 전체 페이드아웃
+    setTimeout(() => overlay.classList.add('ci-fadeout'), 2000);
+
+    // ⑧ 2.8초: 오버레이 제거 → 콘텐츠 등장
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('ci-fadeout');
+        overlay.innerHTML = '';
+        callback();
+    }, 2800);
+}
+
 function loadStage() {
     window.scrollTo(0, 0);
 
@@ -197,16 +250,19 @@ function loadStage() {
     mainContainer.style.opacity = '0';
     mainContainer.style.transition = 'none';
 
-    // ③ 배경 이미지 preload 완료 후 배경 적용 + 지직 효과 시작
+    const isClearStage = (currentStageIndex === gameData.length - 1);
+
+    // ③ 배경 이미지 preload 완료 후 배경 적용 + 전환 효과 시작
     preloadImage(bgUrl).then(() => {
         document.body.style.backgroundImage = `url('${bgUrl}')`;
 
-    // ④ 지직 효과 실행 (배경 로딩 완료 후 시작)
-    showStageIntro(currentStageIndex, () => {
+    // ④ 클리어 화면 / 일반 스테이지 분기
+    const introFn = isClearStage ? showClearIntro : showStageIntro;
+    introFn(currentStageIndex, () => {
 
-        // ④ 지직 끝 → 스테이지 내용 세팅 후 페이드인
-        if (currentStageIndex === gameData.length - 1) {
-            titleEl.innerHTML = `<span class="golden-glow-animated">🧬 우리라는 이름의 기적 🧬</span>`;
+        // ⑤ 전환 끝 → 스테이지 내용 세팅 후 페이드인
+        if (isClearStage) {
+            titleEl.innerHTML = `<span class="golden-glow-animated">🧬 우리라는 이름의 기적 🧬</span><span class="mission-clear-badge">🏆 MISSION CLEAR 🏆</span>`;
             descEl.innerHTML = stage.desc;
             nextBtn.classList.add('hidden');
             inputSection.classList.add('hidden');
@@ -229,7 +285,7 @@ function loadStage() {
             }
         }
 
-        // ⑤ game-screen 표시 확인 후 컨테이너 페이드인
+        // ⑥ game-screen 표시 확인 후 컨테이너 페이드인
         gameScreen.classList.remove('hidden');
         window.scrollTo(0, 0);
         requestAnimationFrame(() => {
@@ -237,9 +293,9 @@ function loadStage() {
             mainContainer.style.opacity = '1';
         });
 
-        // ⑥ 다음 스테이지 배경 미리 캐싱 (백그라운드)
+        // ⑦ 다음 스테이지 배경 미리 캐싱 (백그라운드)
         preloadNextBackground(currentStageIndex);
-    }); // showStageIntro 끝
+    }); // introFn 끝
     }); // preloadImage 끝
 }
 
