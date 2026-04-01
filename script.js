@@ -112,18 +112,7 @@ function showStageIntro(stageIndex, callback) {
     const canvas   = document.getElementById('noise-canvas');
     const mainUI   = document.getElementById('main-ui');
 
-    // ① 스테이지 배경 먼저 적용 (배경이 주인공)
-    if (stageIndex === gameData.length - 1) {
-        document.body.style.backgroundImage = "url('bg_clear.png')";
-    } else {
-        document.body.style.backgroundImage = `url('bg_stage${stageIndex + 1}.png')`;
-    }
-
-    // ② 게임 컨테이너 완전히 숨겨서 배경만 보이게
-    mainUI.style.opacity = '0';
-    mainUI.style.transition = 'none';
-
-    // ③ 캔버스 저해상도 설정 (픽셀 뭉개짐으로 레트로 노이즈 느낌)
+    // ① 캔버스 저해상도 설정 (픽셀 뭉개짐으로 레트로 노이즈 느낌)
     canvas.width  = 120;
     canvas.height = 213;
 
@@ -178,21 +167,21 @@ function loadStage() {
     mainContainer.classList.remove('corona-effect');
     storyBox.classList.remove('clear-mode');
 
-    // 게임화면 일단 숨기고 노이즈 인트로 실행
-    gameScreen.classList.add('hidden');
+    // ① 배경 미리 적용 (지직 효과 동안 배경이 보여야 하므로)
+    if (currentStageIndex === gameData.length - 1) {
+        document.body.style.backgroundImage = "url('bg_clear.png')";
+    } else {
+        document.body.style.backgroundImage = `url('bg_stage${currentStageIndex + 1}.png')`;
+    }
 
+    // ② game-container를 투명하게만 (display는 유지 → 나중에 opacity로 페이드인)
+    mainContainer.style.opacity = '0';
+    mainContainer.style.transition = 'none';
+
+    // ③ 지직 효과 실행 (배경은 보이고, 컨테이너만 투명)
     showStageIntro(currentStageIndex, () => {
-        // 지직 끝 → 게임 컨테이너 부드럽게 등장
-        gameScreen.classList.remove('hidden');
-        gameScreen.classList.remove('fade-in');
-        void gameScreen.offsetWidth; // reflow 강제 (애니메이션 리셋)
-        gameScreen.classList.add('fade-in');
 
-        // mainUI 페이드인
-        mainUI.style.transition = 'opacity 0.7s ease';
-        mainUI.style.opacity = '1';
-        window.scrollTo(0, 0);
-
+        // ④ 지직 끝 → 스테이지 내용 세팅 후 페이드인
         if (currentStageIndex === gameData.length - 1) {
             titleEl.innerHTML = `<span class="golden-glow-animated">🧬 우리라는 이름의 기적 🧬</span>`;
             descEl.innerHTML = stage.desc;
@@ -201,26 +190,29 @@ function loadStage() {
             if (prevBtn) prevBtn.classList.add('hidden');
             mainContainer.classList.add('corona-effect');
             storyBox.classList.add('clear-mode');
-            document.body.style.backgroundImage = "url('bg_clear.png')";
             document.getElementById('audio-clear-bgm').play().catch(() => {});
             showCelebrationEffect();
-            return;
-        }
-
-        const titleParts = stage.title.split(':');
-        if (titleParts.length > 1) {
-            titleEl.innerHTML = `${titleParts[0]}<br><span class="stage-subtitle">"${titleParts[1].trim()}"</span>`;
         } else {
-            titleEl.innerHTML = stage.title;
+            const titleParts = stage.title.split(':');
+            if (titleParts.length > 1) {
+                titleEl.innerHTML = `${titleParts[0]}<br><span class="stage-subtitle">"${titleParts[1].trim()}"</span>`;
+            } else {
+                titleEl.innerHTML = stage.title;
+            }
+            descEl.innerHTML = stage.desc;
+            if (prevBtn) {
+                if (currentStageIndex === 0) prevBtn.classList.add('hidden');
+                else prevBtn.classList.remove('hidden');
+            }
         }
 
-        descEl.innerHTML = stage.desc;
-        document.body.style.backgroundImage = `url('bg_stage${currentStageIndex + 1}.png')`;
-
-        if (prevBtn) {
-            if (currentStageIndex === 0) prevBtn.classList.add('hidden');
-            else prevBtn.classList.remove('hidden');
-        }
+        // ⑤ game-screen 표시 확인 후 컨테이너 페이드인
+        gameScreen.classList.remove('hidden');
+        window.scrollTo(0, 0);
+        requestAnimationFrame(() => {
+            mainContainer.style.transition = 'opacity 0.7s ease';
+            mainContainer.style.opacity = '1';
+        });
     });
 }
 
