@@ -1,246 +1,205 @@
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSis_C0X3WkqRuCSpnxDPx0nkZBYnD2EUgyTpPQvAbSG_fTw3yVLjv4eCxyPjHW4xk_4RAWT7Hi_uIu/pub?output=tsv';
 
 /* ─── DOM 참조 ─────────────────────────────── */
-const introScreen       = document.getElementById('intro-screen');
-const worldviewScreen   = document.getElementById('worldview-screen');
-const gameScreen        = document.getElementById('game-screen');
-const titleEl           = document.getElementById('stage-title');
-const descEl            = document.getElementById('stage-desc');
-const inputEl           = document.getElementById('answer-input');
-const messageEl         = document.getElementById('message-text');
-const successPopup      = document.getElementById('success-popup');
-const hintPopup         = document.getElementById('hint-popup');
-const hintTextEl        = document.getElementById('hint-text');
-const popupKeyword      = document.getElementById('popup-keyword');
-const popupText         = document.getElementById('popup-text');
-const celebrationOverlay= document.getElementById('celebration-overlay');
-const prevBtn           = document.getElementById('prev-btn');
-const mainContainer     = document.getElementById('main-ui');
+const introScreen        = document.getElementById('intro-screen');
+const worldviewScreen    = document.getElementById('worldview-screen');
+const gameScreen         = document.getElementById('game-screen');
+const titleEl            = document.getElementById('stage-title');
+const descEl             = document.getElementById('stage-desc');
+const inputEl            = document.getElementById('answer-input');
+const messageEl          = document.getElementById('message-text');
+const successPopup       = document.getElementById('success-popup');
+const hintPopup          = document.getElementById('hint-popup');
+const hintTextEl         = document.getElementById('hint-text');
+const popupKeyword       = document.getElementById('popup-keyword');
+const popupText          = document.getElementById('popup-text');
+const celebrationOverlay = document.getElementById('celebration-overlay');
+const prevBtn            = document.getElementById('prev-btn');
+const mainContainer      = document.getElementById('main-ui');
 
 /* ─── 상태 ──────────────────────────────────── */
-let gameData         = [];
-let currentStageIndex= 0;
-let celebrationTimer = null;
+let gameData          = [];
+let currentStageIndex = 0;
+let celebrationTimer  = null;
 
 /* ═══════════════════════════════════════════
    영상 목록
    ═══════════════════════════════════════════ */
 const VIDEOS = {
-    intro:        'intro_scene.mp4',    // 인트로 화면 → 시스템 접속 후
-    missionEntry: 'mission_entry.mp4',  // intro_scene 종료 후 연속 재생
-    stages:       [
+    intro:        'intro_scene.mp4',
+    missionEntry: 'mission_entry.mp4',
+    stages: [
         'stage1_intro.mp4',
         'stage2_intro.mp4',
         'stage3_intro.mp4',
         'stage4_intro.mp4',
         'stage5_intro.mp4',
     ],
-    clear:        'clear_intro.mp4',
+    clear: 'clear_intro.mp4',
 };
 
 /* ═══════════════════════════════════════════
-   영상 오버레이 컨트롤러
+   VideoPlayer — 단순하고 확실한 영상 재생기
    ─────────────────────────────────────────
-   핵심 원칙:
-   · 오버레이는 절대 display:none(hidden)으로 없애지 않는다.
-     visibility + opacity로만 제어 → 배경 노출 플래시 원천 차단.
-   · 연속 재생(chainPlay)은 오버레이를 유지한 채 src만 교체.
-   · playVideo() 호출 즉시 오버레이가 검정으로 화면 덮음.
+   설계 원칙:
+   1. 오버레이는 opacity로만 숨김/표시 (display:none 사용 안 함)
+   2. 영상 교체 시 src만 바꾸고 load() 1회만 호출
+   3. canplay 이벤트 + 2.5초 강제시작 이중 안전망
+   4. 연속재생(chain)은 오버레이 유지한 채 src만 교체
    ═══════════════════════════════════════════ */
-const VideoCtrl = (() => {
-    /* 내부 상태 */
-    let _timers    = [];
-    let _isActive  = false;
-    let _forceTimer = null;
+const VideoPlayer = (() => {
+    let timers     = [];
+    let forceTimer = null;
+    let started    = false;
 
-    const _ov       = () => document.getElementById('stage-video-overlay');
-    const _vid      = () => document.getElementById('stage-intro-video');
-    const _fade     = () => document.getElementById('stage-video-fade');
-    const _glitch   = () => document.getElementById('video-glitch-layer');
-
-    function _clearTimers() {
-        _timers.forEach(t => clearTimeout(t));
-        _timers = [];
-        if (_forceTimer) { clearTimeout(_forceTimer); _forceTimer = null; }
+    function getEls() {
+        return {
+            overlay:  document.getElementById('stage-video-overlay'),
+            vid:      document.getElementById('stage-intro-video'),
+            fade:     document.getElementById('stage-video-fade'),
+            glitch:   document.getElementById('video-glitch-layer'),
+        };
     }
 
-    /* 오버레이 즉시 표시 (검정) — 배경 완전히 덮음 */
-    function _showOverlay() {
-        const ov = _ov();
-        ov.style.transition  = 'none';
-        ov.style.opacity     = '1';
-        ov.style.visibility  = 'visible';
-        ov.style.display     = 'flex';
+    function clearAll() {
+        timers.forEach(clearTimeout);
+        timers = [];
+        if (forceTimer) { clearTimeout(forceTimer); forceTimer = null; }
     }
 
-    /* 오버레이 페이드아웃 후 숨김 */
-    function _hideOverlay(cb) {
-        const ov   = _ov();
-        const fade = _fade();
+    /* 오버레이 보이기 (즉시, 검정) */
+    function showOverlay() {
+        const { overlay, fade } = getEls();
+        overlay.style.transition = 'none';
+        overlay.style.opacity    = '1';
+        overlay.style.visibility = 'visible';
+        overlay.style.display    = 'flex';
+        fade.style.transition    = 'none';
+        fade.style.opacity       = '1';  // 영상 준비 전 검정으로 가림
+    }
 
-        // fade 레이어도 완전 검정으로 유지
-        fade.style.transition = 'none';
-        fade.style.opacity    = '1';
-
-        // 오버레이 자체 페이드아웃
-        ov.style.transition = 'opacity 0.35s ease';
-        ov.style.opacity    = '0';
-
-        _timers.push(setTimeout(() => {
-            ov.style.visibility = 'hidden';
-            ov.style.display    = 'none';
-            fade.style.opacity  = '0';
-            _isActive = false;
+    /* 오버레이 숨기기 (페이드아웃 후 display:none) */
+    function hideOverlay(cb) {
+        const { overlay, fade } = getEls();
+        fade.style.transition    = 'none';
+        fade.style.opacity       = '0';
+        overlay.style.transition = 'opacity 0.3s ease';
+        overlay.style.opacity    = '0';
+        setTimeout(() => {
+            overlay.style.visibility = 'hidden';
+            overlay.style.display    = 'none';
             if (cb) cb();
-        }, 360));
+        }, 320);
     }
 
-    /* 단일 영상 재생 내부 로직 */
-    function _play(src, { glitch = false, fadeDuration = 4400, onEnd, _keepOverlay = false } = {}) {
-        const vid      = _vid();
-        const fade     = _fade();
-        const glitchEl = _glitch();
-
-        _clearTimers();
-
-        // ① 오버레이 검정으로 즉시 덮기 (배경 노출 방지)
-        _showOverlay();
-        fade.style.transition = 'none';
-        fade.style.opacity    = '1';   // 검정으로 덮어 영상 준비 전 노출 차단
-        if (glitchEl) glitchEl.classList.remove('vg-active');
-
-        // ② 영상 완전 초기화 — src 비우고 flush
-        vid.pause();
-        vid.removeAttribute('src');
-        vid.load();
-
-        let started = false;
-
-        function startPlayback() {
-            if (started) return;
-            started = true;
-            if (_forceTimer) { clearTimeout(_forceTimer); _forceTimer = null; }
-
-            // fade 레이어 걷어내서 영상 보이게
-            fade.style.transition = 'opacity 0.2s ease';
-            fade.style.opacity    = '0';
-
-            vid.currentTime = 0;
-            vid.play().catch(e => console.warn('[VideoCtrl] play failed:', e));
-
-            // 지직 효과 (스테이지 인트로 전용)
-            if (glitch && glitchEl) {
-                _timers.push(setTimeout(() => _triggerGlitch(glitchEl, 220), 700));
-                _timers.push(setTimeout(() => _triggerGlitch(glitchEl, 200), 3000));
-            }
-
-            // 페이드아웃 → 종료
-            _timers.push(setTimeout(() => {
-                fade.style.transition = 'opacity 0.5s ease';
-                fade.style.opacity    = '1';
-
-                _timers.push(setTimeout(() => {
-                    vid.pause();
-                    vid.removeAttribute('src');
-                    vid.load();
-                    if (glitchEl) glitchEl.classList.remove('vg-active');
-
-                    if (_keepOverlay) {
-                        fade.style.transition = 'none';
-                        fade.style.opacity    = '1';
-                        if (onEnd) onEnd();
-                    } else {
-                        _hideOverlay(onEnd);
-                    }
-                }, 500));
-            }, fadeDuration));
-        }
-
-        // ③ canplay 먼저 등록 → src 설정 → load()
-        //    (일부 브라우저에서 src 할당 직후 canplay가 동기 발화할 수 있어
-        //     반드시 리스너를 먼저 달아야 함)
-        vid.muted       = true;
-        vid.autoplay    = false;
-        vid.loop        = false;
-        vid.playsInline = true;
-
-        vid.addEventListener('canplay', function onReady() {
-            vid.removeEventListener('canplay', onReady);
-            startPlayback();
-        }, { once: true });
-
-        vid.src = src;
-        vid.load();
-
-        // ④ 이미 충분히 버퍼된 경우(캐시) 즉시 시작
-        if (vid.readyState >= 3) {
-            startPlayback();
-            return;
-        }
-
-        // ⑤ 안전망: 3초 안에 canplay 안 오면 강제 재생
-        _forceTimer = setTimeout(() => {
-            console.warn('[VideoCtrl] canplay timeout — forcing playback:', src);
-            startPlayback();
-        }, 3000);
-    }
-
-    function _triggerGlitch(el, ms) {
+    /* 지직 효과 한 번 */
+    function glitchOnce(el, ms) {
+        if (!el) return;
         el.classList.add('vg-active');
         setTimeout(() => el.classList.remove('vg-active'), ms);
     }
 
-    /* ── 공개 API ── */
-    return {
-        /**
-         * 단일 영상 재생
-         * @param {string} src
-         * @param {object} opts  { glitch, fadeDuration, onEnd }
-         */
-        play(src, opts = {}) {
-            _isActive = true;
-            _play(src, { ...opts, _keepOverlay: false });
-        },
+    /* ─── 핵심: 단일 영상 재생 ─── */
+    function playOne(src, opts, onDone) {
+        const { vid, fade, glitch: glitchEl } = getEls();
+        const glitch      = opts.glitch      || false;
+        const fadeDuration = opts.fadeDuration != null ? opts.fadeDuration : 4400;
 
-        /**
-         * 연속 영상 재생 (오버레이 유지한 채 src만 교체)
-         * @param {Array<{src, glitch, fadeDuration}>} playlist
-         * @param {function} onAllEnd  전체 종료 후 콜백
-         */
-        chain(playlist, onAllEnd) {
-            _isActive = true;
-            let idx = 0;
+        clearAll();
+        started = false;
 
-            function playNext() {
-                if (idx >= playlist.length) {
-                    // 모두 재생 완료 → 오버레이 숨기고 콜백
-                    _hideOverlay(onAllEnd);
-                    return;
-                }
-                const item = playlist[idx++];
-                const isLast = (idx >= playlist.length);
-                _play(item.src, {
-                    glitch:       item.glitch       || false,
-                    fadeDuration: item.fadeDuration  || 4400,
-                    onEnd:        playNext,
-                    _keepOverlay: true,  // 항상 오버레이 유지 (마지막도 chain이 처리)
-                });
+        /* fade를 검정으로 유지한 채 영상만 교체 */
+        fade.style.transition = 'none';
+        fade.style.opacity    = '1';
+        if (glitchEl) glitchEl.classList.remove('vg-active');
+
+        /* 이전 영상 완전 정지 (src는 아직 건드리지 않음) */
+        vid.pause();
+
+        function beginPlay() {
+            if (started) return;
+            started = true;
+            clearAll();
+
+            vid.currentTime = 0;
+            /* fade를 걷어내서 영상 표시 */
+            fade.style.transition = 'opacity 0.2s ease';
+            fade.style.opacity    = '0';
+
+            vid.play().catch(err => console.warn('[VP] play():', err));
+
+            /* 지직 효과 */
+            if (glitch && glitchEl) {
+                timers.push(setTimeout(() => glitchOnce(glitchEl, 220),  700));
+                timers.push(setTimeout(() => glitchOnce(glitchEl, 200), 3000));
             }
-            playNext();
+
+            /* fadeDuration 후 검정으로 페이드아웃 → 완료 콜백 */
+            timers.push(setTimeout(() => {
+                fade.style.transition = 'opacity 0.5s ease';
+                fade.style.opacity    = '1';
+                timers.push(setTimeout(() => {
+                    vid.pause();
+                    if (glitchEl) glitchEl.classList.remove('vg-active');
+                    if (onDone) onDone();
+                }, 520));
+            }, fadeDuration));
+        }
+
+        /* src 설정 → canplay 대기 → 재생 */
+        vid.muted       = true;
+        vid.autoplay    = false;
+        vid.loop        = false;
+        vid.playsInline = true;
+        vid.src         = src;
+
+        /* canplay 이벤트 */
+        vid.oncanplay = function () {
+            vid.oncanplay = null;
+            beginPlay();
+        };
+
+        vid.load();
+
+        /* 이미 버퍼된 경우 즉시 시작 */
+        if (vid.readyState >= 3) {
+            vid.oncanplay = null;
+            beginPlay();
+            return;
+        }
+
+        /* 안전망: 2.5초 후 강제 시작 */
+        forceTimer = setTimeout(() => {
+            console.warn('[VP] canplay timeout, forcing:', src);
+            vid.oncanplay = null;
+            beginPlay();
+        }, 2500);
+    }
+
+    /* ─── 공개 API ─── */
+    return {
+        /** 단일 영상 재생 후 콜백 */
+        play(src, opts = {}, onEnd) {
+            showOverlay();
+            playOne(src, opts, () => hideOverlay(onEnd));
         },
 
-        get isActive() { return _isActive; }
+        /** 여러 영상 연속 재생 — 오버레이 유지한 채 src만 교체 */
+        chain(list, onAllEnd) {
+            showOverlay();
+            let i = 0;
+            function next() {
+                if (i >= list.length) { hideOverlay(onAllEnd); return; }
+                const item = list[i++];
+                playOne(item.src, item, next);
+            }
+            next();
+        },
     };
 })();
 
-/* ─── 지직 (외부 노출용) ─── */
-function triggerGlitch(el, ms) {
-    el.classList.add('vg-active');
-    setTimeout(() => el.classList.remove('vg-active'), ms);
-}
-
 /* ═══════════════════════════════════════════
-   prefetch 유틸 — 배경 이미지 / 다음 영상
+   prefetch 유틸
    ═══════════════════════════════════════════ */
 function preloadImage(url) {
     return new Promise(resolve => {
@@ -251,8 +210,7 @@ function preloadImage(url) {
 }
 
 function prefetchVideo(src) {
-    if (!src) return;
-    if (document.querySelector(`link[href="${src}"]`)) return;
+    if (!src || document.querySelector(`link[href="${src}"]`)) return;
     const link = document.createElement('link');
     link.rel  = 'prefetch';
     link.as   = 'video';
@@ -260,13 +218,12 @@ function prefetchVideo(src) {
     document.head.appendChild(link);
 }
 
-function preloadNextAssets(currentIndex) {
-    const nextIndex = currentIndex + 1;
-    if (nextIndex >= gameData.length) return;
-    const isClear = nextIndex === gameData.length - 1;
-    preloadImage(isClear ? 'bg_clear.webp' : `bg_stage${nextIndex + 1}.webp`);
-    if (!isClear) prefetchVideo(VIDEOS.stages[nextIndex]);
-    else          prefetchVideo(VIDEOS.clear);
+function preloadNextAssets(idx) {
+    const next = idx + 1;
+    if (next >= gameData.length) return;
+    const isClear = next === gameData.length - 1;
+    preloadImage(isClear ? 'bg_clear.webp' : `bg_stage${next + 1}.webp`);
+    prefetchVideo(isClear ? VIDEOS.clear : VIDEOS.stages[next]);
 }
 
 /* ═══════════════════════════════════════════
@@ -274,16 +231,16 @@ function preloadNextAssets(currentIndex) {
    ═══════════════════════════════════════════ */
 async function fetchGameData() {
     try {
-        const res  = await fetch(SHEET_URL + `&t=${Date.now()}`);
-        const text = await res.text();
-        const rows = text.split('\n');
+        const res     = await fetch(SHEET_URL + `&t=${Date.now()}`);
+        const text    = await res.text();
+        const rows    = text.split('\n');
         const headers = rows[0].split('\t').map(h => h.trim());
         gameData = [];
         for (let i = 1; i < rows.length; i++) {
             if (!rows[i].trim()) continue;
             const vals = rows[i].split('\t');
             const obj  = {};
-            headers.forEach((h, j) => { obj[h] = vals[j] ? vals[j].trim() : ''; });
+            headers.forEach((h, j) => { obj[h] = (vals[j] || '').trim(); });
             gameData.push(obj);
         }
     } catch (e) { console.error('데이터 연동 실패:', e); }
@@ -295,91 +252,79 @@ window.onload = function () {
     successPopup.classList.add('hidden');
     hintPopup.classList.add('hidden');
 
-    // 오버레이 초기 상태: 숨김 (투명 + display none)
+    /* 오버레이 초기 숨김 */
     const ov = document.getElementById('stage-video-overlay');
     ov.style.opacity    = '0';
     ov.style.visibility = 'hidden';
     ov.style.display    = 'none';
 
-    // 인트로·미션엔트리 영상 미리 prefetch
+    /* 첫 진입 영상 미리 받기 */
     prefetchVideo(VIDEOS.intro);
     prefetchVideo(VIDEOS.missionEntry);
 };
 
 /* ═══════════════════════════════════════════
-   ① 인트로 화면 → "시스템 접속" 클릭
-      intro_scene.mp4 (5s) → mission_entry.mp4 (5s) 연속 재생
-      → 월드뷰 화면 표시
+   ① 시스템 접속 → intro_scene → mission_entry → 월드뷰
    ═══════════════════════════════════════════ */
 function showWorldview() {
-    // UI 즉시 숨기기 (opacity 0, 오버레이가 덮기 전 노출 방지)
     mainContainer.style.transition = 'none';
     mainContainer.style.opacity    = '0';
     introScreen.classList.add('hidden');
 
-    // 두 영상 연속 재생 (오버레이 유지)
-    VideoCtrl.chain(
+    VideoPlayer.chain(
         [
             { src: VIDEOS.intro,        glitch: false, fadeDuration: 4400 },
             { src: VIDEOS.missionEntry, glitch: false, fadeDuration: 4400 },
         ],
         () => {
-            // 두 영상 모두 종료 → 월드뷰 화면 전환
             document.body.style.backgroundImage = "url('bg_default.webp')";
             worldviewScreen.classList.remove('hidden');
             mainContainer.style.transition = 'opacity 0.5s ease';
             mainContainer.style.opacity    = '1';
-            const video = document.getElementById('prologue-video');
-            video.play().catch(() => { video.muted = true; video.play(); });
+            const pv = document.getElementById('prologue-video');
+            pv.muted = true;
+            pv.play().catch(() => {});
             window.scrollTo(0, 0);
         }
     );
 }
 
 /* ═══════════════════════════════════════════
-   ② 미션 코드 입력 → 확인 → 스테이지1 진입
+   ② 미션 코드 입력 → 스테이지 1 진입
    ═══════════════════════════════════════════ */
 function checkMissionCode() {
-    const inputCode   = document.getElementById('mission-code-input').value.trim();
-    const requiredCode= gameData[0]?.missionCode?.toString().trim() || '0303';
+    const inputCode    = document.getElementById('mission-code-input').value.trim();
+    const requiredCode = (gameData[0]?.missionCode || '0303').toString().trim();
 
     if (inputCode !== requiredCode) {
         const err = document.getElementById('mission-error-text');
-        err.innerText = '❌ 접근 거부: 코드 오류';
-        err.style.animation = 'none';
+        err.innerText        = '❌ 접근 거부: 코드 오류';
+        err.style.animation  = 'none';
         requestAnimationFrame(() => { err.style.animation = 'shake 0.3s'; });
         setTimeout(() => { err.style.animation = ''; }, 300);
         return;
     }
 
-    // 프롤로그 영상 정지, 화면 숨기기
     document.getElementById('prologue-video').pause();
     mainContainer.style.transition = 'none';
     mainContainer.style.opacity    = '0';
-    worldviewScreen.classList.add('hidden');
-
-    startGame();
-}
-
-function startGame() {
     worldviewScreen.classList.add('hidden');
     loadStage();
 }
 
 /* ═══════════════════════════════════════════
-   ③ 스테이지 인트로 — stageN_intro.mp4 (5s, 지직 2회)
+   ③ 스테이지 인트로 (지직 2회)
    ═══════════════════════════════════════════ */
 function showStageIntro(stageIndex, callback) {
-    VideoCtrl.play(VIDEOS.stages[stageIndex] || VIDEOS.stages[0], {
-        glitch: true,
-        fadeDuration: 4400,
-        onEnd: callback
-    });
+    VideoPlayer.play(
+        VIDEOS.stages[stageIndex] || VIDEOS.stages[0],
+        { glitch: true, fadeDuration: 4400 },
+        callback
+    );
 }
 
 /* ═══════════════════════════════════════════
-   ④ 미션 클리어 전환 효과
-      황금빛 플래시(1.9s) → clear_intro.mp4 (5s) → 콜백
+   ④ 미션 클리어: 황금 플래시 → clear_intro.mp4 → 콜백
    ═══════════════════════════════════════════ */
 function showClearIntro(stageIndex, callback) {
     const overlay = document.getElementById('clear-intro-overlay');
@@ -405,17 +350,12 @@ function showClearIntro(stageIndex, callback) {
         overlay.classList.add('hidden');
         overlay.classList.remove('ci-fadeout');
         overlay.innerHTML = '';
-        // 클리어 영상 재생 (지직 없음)
-        VideoCtrl.play(VIDEOS.clear, {
-            glitch: false,
-            fadeDuration: 4400,
-            onEnd: callback
-        });
+        VideoPlayer.play(VIDEOS.clear, { glitch: false, fadeDuration: 4400 }, callback);
     }, 1900);
 }
 
 /* ═══════════════════════════════════════════
-   loadStage — 스테이지 로딩 공통 로직
+   loadStage
    ═══════════════════════════════════════════ */
 function loadStage() {
     window.scrollTo(0, 0);
@@ -425,7 +365,6 @@ function loadStage() {
     const inputSection = document.getElementById('mission-input-section');
     const storyBox     = document.querySelector('.story-box');
 
-    // 공통 초기화
     nextBtn.classList.remove('hidden');
     inputSection.classList.add('hidden');
     messageEl.innerText = '';
@@ -438,22 +377,17 @@ function loadStage() {
     mainContainer.classList.remove('corona-effect');
     storyBox.classList.remove('clear-mode');
 
-    // 배경 URL 결정
     const isClear = currentStageIndex === gameData.length - 1;
     const bgUrl   = isClear ? 'bg_clear.webp' : `bg_stage${currentStageIndex + 1}.webp`;
 
-    // 컨테이너 투명 (인트로 영상 뒤 페이드인 준비)
     mainContainer.style.opacity    = '0';
     mainContainer.style.transition = 'none';
 
-    // 배경 preload 완료 후 인트로 시작
     preloadImage(bgUrl).then(() => {
         document.body.style.backgroundImage = `url('${bgUrl}')`;
 
         const introFn = isClear ? showClearIntro : showStageIntro;
         introFn(currentStageIndex, () => {
-
-            // 스테이지 내용 세팅
             if (isClear) {
                 titleEl.innerHTML = `<span class="golden-glow-animated">🧬 우리라는 이름의 기적 🧬</span><span class="mission-clear-badge">🏆 MISSION CLEAR 🏆</span>`;
                 descEl.innerHTML  = stage.desc;
@@ -473,7 +407,6 @@ function loadStage() {
                 if (prevBtn) prevBtn.classList.toggle('hidden', currentStageIndex === 0);
             }
 
-            // 컨테이너 페이드인
             gameScreen.classList.remove('hidden');
             window.scrollTo(0, 0);
             requestAnimationFrame(() => {
@@ -481,14 +414,13 @@ function loadStage() {
                 mainContainer.style.opacity    = '1';
             });
 
-            // 다음 스테이지 에셋 미리 캐싱
             preloadNextAssets(currentStageIndex);
         });
     });
 }
 
 /* ═══════════════════════════════════════════
-   게임 플레이 함수들
+   게임 플레이
    ═══════════════════════════════════════════ */
 function showMission() {
     window.scrollTo(0, 0);
@@ -526,8 +458,8 @@ function checkAnswer() {
         popupText.innerHTML    = stage.clearText;
         successPopup.classList.remove('hidden');
     } else {
-        messageEl.innerText   = '❌ 코드 불일치';
-        messageEl.className   = 'error';
+        messageEl.innerText = '❌ 코드 불일치';
+        messageEl.className = 'error';
     }
 }
 
@@ -540,7 +472,7 @@ function showHint()  { hintTextEl.innerText = gameData[currentStageIndex].hint; 
 function closeHint() { hintPopup.classList.add('hidden'); }
 
 /* ═══════════════════════════════════════════
-   파티클 (클리어 화면)
+   파티클 (클리어)
    ═══════════════════════════════════════════ */
 function showCelebrationEffect() {
     celebrationOverlay.classList.remove('hidden');
