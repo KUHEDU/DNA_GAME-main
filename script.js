@@ -205,7 +205,10 @@ const VideoPlayer = (() => {
 })();
 
 /* ═══════════════════════════════════════════
-   prefetch 유틸
+   프리로드 유틸
+   ─────────────────────────────────────────
+   prefetch(hint) 대신 fetch()로 직접 브라우저 캐시에 강제 저장.
+   모바일에서도 확실하게 동작하며, 재생 시 즉시 로드됨.
    ═══════════════════════════════════════════ */
 function preloadImage(url) {
     return new Promise(resolve => {
@@ -215,21 +218,27 @@ function preloadImage(url) {
     });
 }
 
-function prefetchVideo(src) {
-    if (!src || document.querySelector(`link[href="${src}"]`)) return;
-    const link = document.createElement('link');
-    link.rel  = 'prefetch';
-    link.as   = 'video';
-    link.href = src;
-    document.head.appendChild(link);
+/* 이미 요청 중인 영상 추적 (중복 fetch 방지) */
+const _preloadedVideos = new Set();
+
+function preloadVideo(src) {
+    if (!src || _preloadedVideos.has(src)) return;
+    _preloadedVideos.add(src);
+    fetch(src, { priority: 'low' })
+        .then(res => {
+            if (!res.ok) console.warn('[Preload] 실패:', src, res.status);
+            else res.blob().then(() => console.log('[Preload] 완료:', src));
+        })
+        .catch(err => console.warn('[Preload] 오류:', src, err));
 }
 
+/* 현재 스테이지 기준으로 다음 영상+이미지 프리로드 */
 function preloadNextAssets(idx) {
     const next = idx + 1;
     if (next >= gameData.length) return;
     const isClear = next === gameData.length - 1;
     preloadImage(isClear ? 'bg_clear.webp' : `bg_stage${next + 1}.webp`);
-    prefetchVideo(isClear ? VIDEOS.clear : VIDEOS.stages[next]);
+    preloadVideo(isClear ? VIDEOS.clear : VIDEOS.stages[next]);
 }
 
 /* ═══════════════════════════════════════════
@@ -265,9 +274,9 @@ window.onload = function () {
     ov.style.visibility = 'hidden';
     ov.style.display    = 'none';
 
-    /* 첫 진입 영상 미리 받기 */
-    prefetchVideo(VIDEOS.intro);
-    prefetchVideo(VIDEOS.missionEntry);
+    /* 첫 화면에서 다음에 나올 영상들 즉시 프리로드 */
+    preloadVideo(VIDEOS.intro);          // 시스템접속 클릭 시 바로 재생
+    preloadVideo(VIDEOS.missionEntry);   // intro 다음 재생 (미션코드 입력 후)
 };
 
 /* ═══════════════════════════════════════════
@@ -278,7 +287,8 @@ function showWorldview() {
     mainContainer.style.opacity    = '0';
     introScreen.classList.add('hidden');
 
-    /* intro_scene 한 편만 재생 — mission_entry는 코드 입력 후로 이동 */
+    /* intro_scene 재생 — 시작과 동시에 다음 영상(mission_entry) 프리로드 */
+    preloadVideo(VIDEOS.missionEntry);   // intro 재생 중 미리 캐시
     VideoPlayer.play(
         VIDEOS.intro,
         { glitch: false, fadeDuration: 4400 },
@@ -291,6 +301,10 @@ function showWorldview() {
             pv.muted = true;
             pv.play().catch(() => {});
             window.scrollTo(0, 0);
+            /* 월드뷰 표시 후 stage1 + mission_entry 확실히 캐시 (중복 방지됨) */
+            preloadVideo(VIDEOS.missionEntry);
+            preloadVideo(VIDEOS.stages[0]);
+            preloadImage('bg_stage1.webp');
         }
     );
 }
@@ -317,6 +331,9 @@ function checkMissionCode() {
     mainContainer.style.opacity    = '0';
     worldviewScreen.classList.add('hidden');
 
+    /* mission_entry 재생 중 stage1 영상+배경 프리로드 */
+    preloadVideo(VIDEOS.stages[0]);
+    preloadImage('bg_stage1.webp');
     VideoPlayer.play(
         VIDEOS.missionEntry,
         { glitch: false, fadeDuration: 4400 },
@@ -328,6 +345,16 @@ function checkMissionCode() {
    ③ 스테이지 인트로 (지직 2회)
    ═══════════════════════════════════════════ */
 function showStageIntro(stageIndex, callback) {
+    /* 이 스테이지 영상 재생 중에 다음 스테이지 영상 프리로드 */
+    const nextIdx  = stageIndex + 1;
+    const isClear  = nextIdx >= VIDEOS.stages.length;
+    if (isClear) {
+        preloadVideo(VIDEOS.clear);
+        preloadImage('bg_clear.webp');
+    } else if (nextIdx < VIDEOS.stages.length) {
+        preloadVideo(VIDEOS.stages[nextIdx]);
+        preloadImage(`bg_stage${nextIdx + 1}.webp`);
+    }
     VideoPlayer.play(
         VIDEOS.stages[stageIndex] || VIDEOS.stages[0],
         { glitch: true, fadeDuration: 4400 },
