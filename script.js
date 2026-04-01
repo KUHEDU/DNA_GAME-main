@@ -169,20 +169,25 @@ function showStageIntro(stageIndex, callback) {
 
 /* ─────────────────────────────────────────
    🏆 미션 클리어 전환 효과
-   흐름: 검은 화면 → 황금 플래시 폭발 → 빛 잔광 → 페이드아웃 → 콘텐츠 등장
-   총 2.8초
+   흐름:
+     0.15s : 황금 플래시 폭발
+     0.4s  : 빛줄기 + 텍스트 팝 등장
+     1.4s  : 오버레이 페이드아웃 (배경 드러남)
+     1.9s  : 오버레이 완전 제거 → 배경만 2초 노출
+     3.9s  : 스토리박스(mainContainer) 페이드인
 ───────────────────────────────────────── */
 function showClearIntro(stageIndex, callback) {
     const overlay = document.getElementById('clear-intro-overlay');
     overlay.innerHTML = '';
-    overlay.classList.remove('hidden');
+    overlay.classList.remove('hidden', 'ci-fadeout');
+    overlay.style.opacity = '';
 
     // ① 황금 플래시 레이어
     const flash = document.createElement('div');
     flash.className = 'ci-flash';
     overlay.appendChild(flash);
 
-    // ② 빛줄기 방사 레이어 (CSS animation)
+    // ② 빛줄기 방사 레이어
     const rays = document.createElement('div');
     rays.className = 'ci-rays';
     overlay.appendChild(rays);
@@ -198,26 +203,27 @@ function showClearIntro(stageIndex, callback) {
     ring.className = 'ci-ring';
     overlay.appendChild(ring);
 
-    // ⑤ 0.15초: 플래시 폭발
+    // ⑤ 0.15s: 플래시 폭발
     setTimeout(() => flash.classList.add('ci-flash-burst'), 150);
 
-    // ⑥ 0.4초: 빛줄기 + 텍스트 등장
+    // ⑥ 0.4s: 빛줄기 + 텍스트 팝 등장
     setTimeout(() => {
         rays.classList.add('ci-rays-show');
         label.classList.add('ci-label-show');
         ring.classList.add('ci-ring-show');
     }, 400);
 
-    // ⑦ 2.0초: 전체 페이드아웃
-    setTimeout(() => overlay.classList.add('ci-fadeout'), 2000);
+    // ⑦ 1.4s: 오버레이 페이드아웃 시작 → 배경화면이 드러남
+    setTimeout(() => overlay.classList.add('ci-fadeout'), 1400);
 
-    // ⑧ 2.8초: 오버레이 제거 → 콘텐츠 등장
+    // ⑧ 1.9s: 오버레이 완전 제거 → 배경만 보이는 상태 진입
     setTimeout(() => {
         overlay.classList.add('hidden');
         overlay.classList.remove('ci-fadeout');
         overlay.innerHTML = '';
-        callback();
-    }, 2800);
+        // ⑨ 배경화면을 2초간 노출 후 스토리박스 등장
+        setTimeout(() => callback(), 2000);
+    }, 1900);
 }
 
 function loadStage() {
