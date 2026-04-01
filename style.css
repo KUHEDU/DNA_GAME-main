@@ -182,12 +182,14 @@ button {
     font-family: 'Noto Sans KR', sans-serif;
 }
 .input-section {
-    display: flex; gap: var(--sp-xs);
+    display: flex; gap: 6px;
     margin-top: var(--sp-xs);
     width: 100%; flex-shrink: 0;
+    align-items: stretch;
 }
 input[type="text"] {
-    flex: 2;
+    flex: 1 1 0;          /* 남은 공간 모두 차지 */
+    min-width: 0;         /* flex 자식 overflow 방지 */
     padding: clamp(9px, 2.8vw, 12px);
     border-radius: 6px;
     border: 1px solid #30363d;
@@ -196,8 +198,21 @@ input[type="text"] {
     text-align: center;
     font-family: 'Noto Sans KR', sans-serif;
 }
-.confirm-btn { flex: 1.2; background: #1f6feb; margin: 0; }
-.hint-btn    { flex: 0.8; background: #6e7681; margin: 0; }
+/* 승인·힌트 버튼: 고정 너비 + 절대 줄바꿈 금지 */
+.confirm-btn {
+    flex: 0 0 clamp(52px, 14vw, 64px); /* 너비 고정 */
+    background: #1f6feb; margin: 0;
+    white-space: nowrap;
+    font-size: clamp(0.80rem, 2.6vw, 0.95rem) !important;
+    padding-left: 4px; padding-right: 4px;
+}
+.hint-btn {
+    flex: 0 0 clamp(46px, 12vw, 56px); /* 너비 고정 */
+    background: #6e7681; margin: 0;
+    white-space: nowrap;
+    font-size: clamp(0.80rem, 2.6vw, 0.95rem) !important;
+    padding-left: 4px; padding-right: 4px;
+}
 
 #prev-btn {
     position: absolute; top: clamp(10px, 2.5vw, 15px); left: clamp(10px, 2.5vw, 15px);
