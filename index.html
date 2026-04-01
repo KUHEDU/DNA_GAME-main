@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
     <title>프로젝트: 최후의 백신</title>
-    <link rel="stylesheet" href="style.css?v=31">
+    <link rel="stylesheet" href="style.css?v=32">
 </head>
 <body>
     <div id="effect-overlay" class="pointer-events-none"></div>
@@ -62,7 +62,7 @@
 
         <div id="game-screen" class="hidden">
             <button id="prev-btn" class="hidden" onclick="goBack()">⬅ 뒤로가기</button>
-            <h1 id="hospital-logo" style="font-size: 1.1rem;"> 미션 팀, 건국 DNA를 완성하라! </h1>
+            <h1 id="hospital-logo"> 미션 팀, 건국 DNA를 완성하라! </h1>
             <hr>
             <h2 id="stage-title">로딩 중...</h2>
             <div class="story-box" id="main-story-box">
@@ -92,10 +92,10 @@
     <div id="hint-popup" class="hidden">
         <div class="popup-content">
             <span class="close-btn" onclick="closeHint()">&times;</span>
-            <div id="popup-header" style="color: #000; font-size: 1.25rem; margin-top: 10px;">💡 미션 힌트!</div>
-            <hr style="border-color: #eee; margin: 15px 0;">
-            <p id="hint-text" style="color: #444; line-height: 1.6; word-break: keep-all; font-size: 1.05rem;"></p>
-            <button onclick="closeHint()" class="full-btn" style="margin-top: 25px; background: #6e7681;">확인 완료</button>
+            <div id="popup-header">💡 미션 힌트!</div>
+            <hr>
+            <p id="hint-text"></p>
+            <button onclick="closeHint()" class="full-btn">확인 완료</button>
         </div>
     </div>
 
