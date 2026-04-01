@@ -274,11 +274,10 @@ function showWorldview() {
     mainContainer.style.opacity    = '0';
     introScreen.classList.add('hidden');
 
-    VideoPlayer.chain(
-        [
-            { src: VIDEOS.intro,        glitch: false, fadeDuration: 4400 },
-            { src: VIDEOS.missionEntry, glitch: false, fadeDuration: 4400 },
-        ],
+    /* intro_scene 한 편만 재생 — mission_entry는 코드 입력 후로 이동 */
+    VideoPlayer.play(
+        VIDEOS.intro,
+        { glitch: false, fadeDuration: 4400 },
         () => {
             document.body.style.backgroundImage = "url('bg_default.webp')";
             worldviewScreen.classList.remove('hidden');
@@ -308,11 +307,17 @@ function checkMissionCode() {
         return;
     }
 
+    /* 코드 정상 — 프롤로그 중지, mission_entry 영상 재생 후 스테이지 진입 */
     document.getElementById('prologue-video').pause();
     mainContainer.style.transition = 'none';
     mainContainer.style.opacity    = '0';
     worldviewScreen.classList.add('hidden');
-    loadStage();
+
+    VideoPlayer.play(
+        VIDEOS.missionEntry,
+        { glitch: false, fadeDuration: 4400 },
+        () => { loadStage(); }
+    );
 }
 
 /* ═══════════════════════════════════════════

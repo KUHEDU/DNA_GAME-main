@@ -112,15 +112,15 @@ body {
     width: 92%;
     max-width: 480px;
     margin: 0 auto;
-    /* 깊이감 있는 다크 글래스 모피즘 */
+    /* 깊이감 있는 다크 글래스 모피즘 — 배경이미지 살짝 비치도록 투명도 조정 */
     background:
         linear-gradient(160deg,
-            rgba(18, 26, 38, 0.78) 0%,
-            rgba(10, 15, 22, 0.88) 60%,
-            rgba(6, 10, 14, 0.92) 100%
+            rgba(14, 20, 30, 0.52) 0%,
+            rgba(8, 12, 18, 0.62) 60%,
+            rgba(5, 8, 12, 0.68) 100%
         );
-    -webkit-backdrop-filter: blur(24px) saturate(1.5);
-    backdrop-filter: blur(24px) saturate(1.5);
+    -webkit-backdrop-filter: blur(10px) saturate(1.3);
+    backdrop-filter: blur(10px) saturate(1.3);
     border: 1px solid var(--border-default);
     border-top: 1px solid var(--border-strong);
     border-radius: var(--r-xl);
@@ -333,8 +333,8 @@ h2 {
    ============================================================ */
 .story-box {
     background: linear-gradient(145deg,
-        rgba(46, 213, 115, 0.07) 0%,
-        rgba(11, 16, 24, 0.60) 100%
+        rgba(46, 213, 115, 0.08) 0%,
+        rgba(8, 12, 18, 0.42) 100%
     ) !important;
     border: 1px solid rgba(46, 213, 115, 0.20) !important;
     border-left: var(--bar-left) solid var(--accent-green) !important;
@@ -370,8 +370,8 @@ h2 {
 /* 인트로박스 (빨간 계열) */
 .intro-box {
     background: linear-gradient(145deg,
-        rgba(255, 71, 87, 0.08) 0%,
-        rgba(11, 16, 24, 0.60) 100%
+        rgba(255, 71, 87, 0.09) 0%,
+        rgba(8, 12, 18, 0.42) 100%
     ) !important;
     border-color: rgba(255, 71, 87, 0.22) !important;
     border-left-color: var(--accent-red) !important;
@@ -383,8 +383,8 @@ h2 {
 /* 클리어 모드 */
 .clear-mode {
     background: linear-gradient(145deg,
-        rgba(255, 211, 42, 0.09) 0%,
-        rgba(11, 16, 24, 0.60) 100%
+        rgba(255, 211, 42, 0.10) 0%,
+        rgba(8, 12, 18, 0.42) 100%
     ) !important;
     border-color: rgba(255, 211, 42, 0.25) !important;
     border-left-color: var(--accent-yellow) !important;
