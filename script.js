@@ -74,7 +74,7 @@ const VideoPlayer = (() => {
         overlay.style.transition = 'none';
         overlay.style.opacity    = '1';
         overlay.style.visibility = 'visible';
-        overlay.style.display    = 'flex';
+        overlay.style.display    = 'block';
         fade.style.transition    = 'none';
         fade.style.opacity       = '1';  // 영상 준비 전 검정으로 가림
     }
