@@ -75,6 +75,12 @@ const VideoPlayer = (() => {
         overlay.style.opacity    = '1';
         overlay.style.visibility = 'visible';
         overlay.style.display    = 'block';
+        /* 모바일 Safari 대비: overlay 크기 명시 강제 */
+        overlay.style.position = 'fixed';
+        overlay.style.top      = '0';
+        overlay.style.left     = '0';
+        overlay.style.width    = '100vw';
+        overlay.style.height   = '100vh';
         fade.style.transition    = 'none';
         fade.style.opacity       = '1';  // 영상 준비 전 검정으로 가림
     }
@@ -157,6 +163,8 @@ const VideoPlayer = (() => {
         vid.autoplay    = false;
         vid.loop        = false;
         vid.playsInline = true;
+        /* 모바일 Safari 등에서 position:fixed 내 absolute 오작동 방어 — 인라인 강제 지정 */
+        vid.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:center center;display:block;background:#000;z-index:1;';
         vid.src         = src;
 
         /* canplay 이벤트 */
