@@ -423,6 +423,8 @@ function loadStage() {
     hintPopup.classList.add('hidden');
     mainContainer.classList.remove('corona-effect');
     storyBox.classList.remove('clear-mode');
+    const prevGif = document.getElementById('mission-guide-gif');
+    if (prevGif) prevGif.remove();
 
     const isClear = currentStageIndex === gameData.length - 1;
     const bgUrl   = isClear ? 'bg_clear.webp' : `bg_stage${currentStageIndex + 1}.webp`;
@@ -451,6 +453,21 @@ function loadStage() {
                     ? `${parts[0]}<br><span class="stage-subtitle">"${parts[1].trim()}"</span>`
                     : stage.title;
                 descEl.innerHTML = stage.desc;
+
+                /* 스테이지 3, 4 — 미션 GIF 삽입 */
+                const gifMap = { 2: 'stage3_mission.gif', 3: 'stage4_mission.gif' };
+                // 기존 GIF 제거 후 재삽입
+                const oldGif = document.getElementById('mission-guide-gif');
+                if (oldGif) oldGif.remove();
+                if (gifMap[currentStageIndex]) {
+                    const gif = document.createElement('img');
+                    gif.id  = 'mission-guide-gif';
+                    gif.src = gifMap[currentStageIndex];
+                    gif.alt = '미션 예시';
+                    gif.style.cssText = 'display:block;width:100%;max-width:100%;border-radius:8px;margin-top:12px;border:1px solid rgba(46,213,115,0.25);';
+                    descEl.parentNode.appendChild(gif);
+                }
+
                 if (prevBtn) prevBtn.classList.toggle('hidden', currentStageIndex === 0);
             }
 
