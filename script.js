@@ -425,6 +425,8 @@ function loadStage() {
     storyBox.classList.remove('clear-mode');
     const prevVid = document.getElementById('mission-guide-video');
     if (prevVid) prevVid.remove();
+    const prevImg = document.getElementById('mission-guide-img');
+    if (prevImg) prevImg.remove();
 
     const isClear = currentStageIndex === gameData.length - 1;
     const bgUrl   = isClear ? 'bg_clear.webp' : `bg_stage${currentStageIndex + 1}.webp`;
@@ -494,11 +496,30 @@ function showMission() {
         </div>
     `;
 
-    /* 기존 영상 제거 */
+    /* 기존 미디어(영상/이미지) 제거 */
     const oldVid = document.getElementById('mission-guide-video');
     if (oldVid) oldVid.remove();
+    const oldImg = document.getElementById('mission-guide-img');
+    if (oldImg) oldImg.remove();
 
-    /* 스테이지 3·4에만 미션 안내 영상 삽입 */
+    /* 스테이지 1 — 미션 안내 이미지 삽입 */
+    if (currentStageIndex === 0) {
+        const img = document.createElement('img');
+        img.id  = 'mission-guide-img';
+        img.src = 'stage1_mission.jpg';
+        img.alt = '미션 예시';
+        img.style.cssText = [
+            'display:block',
+            'width:100%',
+            'max-width:100%',
+            'border-radius:8px',
+            'margin-top:14px',
+            'border:1px solid rgba(46,213,115,0.28)',
+        ].join(';');
+        descEl.parentNode.appendChild(img);
+    }
+
+    /* 스테이지 3·4 — 미션 안내 영상 삽입 */
     if (missionVidSrc) {
         const vid = document.createElement('video');
         vid.id          = 'mission-guide-video';
