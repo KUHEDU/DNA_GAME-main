@@ -423,8 +423,8 @@ function loadStage() {
     hintPopup.classList.add('hidden');
     mainContainer.classList.remove('corona-effect');
     storyBox.classList.remove('clear-mode');
-    const prevGif = document.getElementById('mission-guide-gif');
-    if (prevGif) prevGif.remove();
+    const prevVid = document.getElementById('mission-guide-video');
+    if (prevVid) prevVid.remove();
 
     const isClear = currentStageIndex === gameData.length - 1;
     const bgUrl   = isClear ? 'bg_clear.webp' : `bg_stage${currentStageIndex + 1}.webp`;
@@ -454,20 +454,6 @@ function loadStage() {
                     : stage.title;
                 descEl.innerHTML = stage.desc;
 
-                /* 스테이지 3, 4 — 미션 GIF 삽입 */
-                const gifMap = { 2: 'stage3_mission.gif', 3: 'stage4_mission.gif' };
-                // 기존 GIF 제거 후 재삽입
-                const oldGif = document.getElementById('mission-guide-gif');
-                if (oldGif) oldGif.remove();
-                if (gifMap[currentStageIndex]) {
-                    const gif = document.createElement('img');
-                    gif.id  = 'mission-guide-gif';
-                    gif.src = gifMap[currentStageIndex];
-                    gif.alt = '미션 예시';
-                    gif.style.cssText = 'display:block;width:100%;max-width:100%;border-radius:8px;margin-top:12px;border:1px solid rgba(46,213,115,0.25);';
-                    descEl.parentNode.appendChild(gif);
-                }
-
                 if (prevBtn) prevBtn.classList.toggle('hidden', currentStageIndex === 0);
             }
 
@@ -491,6 +477,11 @@ function showMission() {
     const stage        = gameData[currentStageIndex];
     const nextBtn      = document.getElementById('next-mission-btn');
     const inputSection = document.getElementById('mission-input-section');
+
+    /* 미션 설명 영상 맵 (0-based 인덱스: 스테이지3=2, 스테이지4=3) */
+    const missionVideoMap = { 2: 'stage3_mission.mp4', 3: 'stage4_mission.mp4' };
+    const missionVidSrc   = missionVideoMap[currentStageIndex] || null;
+
     descEl.innerHTML = `
         <div class="mission-title-box">${stage.missionTitle || '미션 설명'}</div>
         <div class="mission-part">
@@ -502,6 +493,34 @@ function showMission() {
             <div class="mission-text">${stage.missionCondition}</div>
         </div>
     `;
+
+    /* 기존 영상 제거 */
+    const oldVid = document.getElementById('mission-guide-video');
+    if (oldVid) oldVid.remove();
+
+    /* 스테이지 3·4에만 미션 안내 영상 삽입 */
+    if (missionVidSrc) {
+        const vid = document.createElement('video');
+        vid.id          = 'mission-guide-video';
+        vid.src         = missionVidSrc;
+        vid.autoplay    = true;
+        vid.loop        = true;
+        vid.muted       = true;
+        vid.playsInline = true;
+        vid.style.cssText = [
+            'display:block',
+            'width:100%',
+            'max-width:100%',
+            'border-radius:8px',
+            'margin-top:14px',
+            'border:1px solid rgba(46,213,115,0.28)',
+            'background:#000',
+        ].join(';');
+        descEl.parentNode.appendChild(vid);
+        vid.load();
+        vid.play().catch(() => {});
+    }
+
     nextBtn.classList.add('hidden');
     inputSection.classList.remove('hidden');
     if (prevBtn) prevBtn.classList.remove('hidden');
