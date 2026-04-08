@@ -397,7 +397,7 @@ function showClearIntro(stageIndex, callback) {
         overlay.classList.add('hidden');
         overlay.classList.remove('ci-fadeout');
         overlay.innerHTML = '';
-        VideoPlayer.play(VIDEOS.clear, { glitch: false, fadeDuration: 4400 }, callback);
+        VideoPlayer.play(VIDEOS.clear, { glitch: false, fadeDuration: 14200 }, callback);
     }, 1900);
 }
 
