@@ -50,7 +50,7 @@
                 <input type="text" id="mission-code-input" placeholder="미션 시작 코드를 입력하세요" autocomplete="off">
             </div>
             <p id="mission-error-text" style="text-align: center; font-weight: bold; min-height: 20px; margin-top: 1px;"></p>
-            <button onclick="checkMissionCode()" class="full-btn">미션 시작</button>
+            <button onclick="checkMissionCode()" class="full-btn pulse-btn">미션 시작</button>
         </div>
 
         <div id="game-screen" class="hidden">
@@ -61,7 +61,7 @@
             <div class="story-box" id="main-story-box">
                 <p id="stage-desc">시스템을 불러오는 중입니다.</p>
             </div>
-            <button id="next-mission-btn" class="full-btn" onclick="showMission()">미션 확인</button>
+            <button id="next-mission-btn" class="full-btn pulse-btn" onclick="showMission()">미션 확인</button>
             <div class="input-section hidden" id="mission-input-section">
                 <input type="text" id="answer-input" placeholder="코드 입력" autocomplete="off">
                 <button onclick="checkAnswer()" class="confirm-btn">승인</button>
@@ -75,10 +75,10 @@
         <div class="popup-content">
             <div id="popup-header">✅ 시스템 알림</div>
             <h2 id="popup-title">보안 승인 완료</h2>
-            <p id="popup-keyword"></p>
+            <div id="popup-keyword"></div>
             <hr style="border-color: #eee; margin: 15px 0;">
-            <p id="popup-text"></p>
-            <button onclick="closePopupAndNext()" class="full-btn" style="margin-top: 20px;">다음으로</button>
+            <div id="popup-text"></div>
+            <button onclick="closePopupAndNext()" class="full-btn pulse-btn-gold" style="margin-top: 20px;">다음으로</button>
         </div>
     </div>
 

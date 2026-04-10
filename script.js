@@ -402,8 +402,87 @@ function showClearIntro(stageIndex, callback) {
 }
 
 /* ═══════════════════════════════════════════
-   loadStage
+   스토리 문장 순차 출력
+   ─────────────────────────────────────────
+   desc 텍스트(HTML/평문)를 문장 단위로 분리한 뒤
+   한 문장씩 페이드인하고, 완료 후 onAllDone 콜백.
+
+   분리 우선순위:
+     1. <p> / <li> 태그
+     2. <br> / <br/> 태그
+     3. \n 줄바꿈
+     4. 한국어 문장 부호 (. ! ? ~ ···)
    ═══════════════════════════════════════════ */
+function animateStoryDesc(htmlString, targetEl, onAllDone) {
+    const DELAY_BETWEEN = 1500; /* 문장 간 간격 (ms) — 더 천천히 읽을 수 있도록 여유 지정 */
+    const FADE_DURATION = 800;  /* 개별 문장 페이드인 시간 (ms) */
+
+    /* ── 1단계: 문장 배열 추출 ── */
+    let sentences = [];
+
+    const tmp = document.createElement('div');
+    tmp.innerHTML = htmlString;
+
+    /* 방법A: <p> 또는 <li> 태그가 2개 이상 있으면 그대로 사용 */
+    const pEls = Array.from(tmp.querySelectorAll('p, li'));
+    if (pEls.length >= 2) {
+        sentences = pEls.map(el => el.innerHTML.trim()).filter(s => s.length > 0);
+    }
+
+    /* 방법B: <br> 기준 분리 */
+    if (sentences.length < 2) {
+        const brSplit = htmlString
+            .replace(/<br\s*\/?>/gi, '\n')   /* <br> → \n */
+            .replace(/<\/?p>/gi,     '\n')   /* <p> 태그 → \n */
+            .replace(/<[^>]+>/g,     '')     /* 나머지 태그 제거 */
+            .split('\n')
+            .map(s => s.trim())
+            .filter(s => s.length > 0);
+        if (brSplit.length >= 2) sentences = brSplit;
+    }
+
+    /* 방법C: 문장부호 뒤 공백 기준 분리 (. ! ? ~ ··· 등) */
+    if (sentences.length < 2) {
+        const plainText = tmp.textContent || tmp.innerText || '';
+        const punctSplit = plainText
+            .split(/(?<=[.!?~…]+)\s+/)
+            .map(s => s.trim())
+            .filter(s => s.length > 0);
+        if (punctSplit.length >= 2) sentences = punctSplit;
+    }
+
+    /* 방법D: 전체 텍스트를 단일 문장으로 처리 (최후의 수단) */
+    if (sentences.length === 0) {
+        const fallback = (tmp.textContent || tmp.innerText || htmlString).trim();
+        if (fallback.length > 0) sentences = [fallback];
+    }
+
+    /* ── 2단계: targetEl 초기화 후 순차 출력 ── */
+    targetEl.innerHTML = '';
+
+    sentences.forEach((text, i) => {
+        const el = document.createElement('p');
+        el.innerHTML = text;
+        /* CSS .story-box p 규칙과 충돌 없이 인라인으로 초기화 */
+        el.style.opacity    = '0';
+        el.style.transform  = 'translateY(12px)';
+        el.style.transition = `opacity ${FADE_DURATION}ms ease, transform ${FADE_DURATION}ms ease`;
+        el.style.margin     = '0 0 10px 0';
+        targetEl.appendChild(el);
+
+        setTimeout(() => {
+            el.style.opacity   = '1';
+            el.style.transform = 'translateY(0)';
+
+            /* 마지막 문장 페이드인 완료 후 콜백 */
+            if (i === sentences.length - 1) {
+                setTimeout(onAllDone, FADE_DURATION + 100);
+            }
+        }, i === 0 ? 50 : DELAY_BETWEEN * i + 50);
+    });
+}
+
+
 function loadStage() {
     window.scrollTo(0, 0);
 
@@ -412,7 +491,7 @@ function loadStage() {
     const inputSection = document.getElementById('mission-input-section');
     const storyBox     = document.querySelector('.story-box');
 
-    nextBtn.classList.remove('hidden');
+    nextBtn.classList.add('hidden');   /* 처음에는 숨김 — 문장 출력 완료 후 표시 */
     inputSection.classList.add('hidden');
     messageEl.innerText = '';
     inputEl.value = '';
@@ -454,7 +533,20 @@ function loadStage() {
                 titleEl.innerHTML = parts.length > 1
                     ? `${parts[0]}<br><span class="stage-subtitle">"${parts[1].trim()}"</span>`
                     : stage.title;
-                descEl.innerHTML = stage.desc;
+
+                /* 문장 순차 출력 — 완료 후 미션 확인 버튼 페이드인 표시 */
+                animateStoryDesc(stage.desc, descEl, () => {
+                    nextBtn.style.opacity    = '0';
+                    nextBtn.style.transform  = 'translateY(8px)';
+                    nextBtn.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    nextBtn.classList.remove('hidden');
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            nextBtn.style.opacity   = '1';
+                            nextBtn.style.transform = 'translateY(0)';
+                        });
+                    });
+                });
 
                 if (prevBtn) prevBtn.classList.toggle('hidden', currentStageIndex === 0);
             }
@@ -558,9 +650,38 @@ function checkAnswer() {
     const userAns = inputEl.value.trim();
     if (!userAns) return;
     if (userAns === stage.answer) {
-        popupKeyword.innerHTML = `🃏 <span class="highlight-item">핵심가치: ${stage.keyword}</span> 카드 획득!`;
-        popupText.innerHTML    = stage.clearText;
+        /* 팝업 키워드 카드 표시 */
+        popupKeyword.innerHTML = `
+            <div class="card-acquire-label">🃏 핵심가치 카드 획득!</div>
+            <div class="card-keyword-name">${stage.keyword}</div>
+        `;
+
+        /* clearText 초기화 */
+        popupText.innerHTML = '';
+
+        /* 다음으로 버튼 숨김 */
+        const nextBtn = successPopup.querySelector('button');
+        if (nextBtn) {
+            nextBtn.style.transition = 'none';
+            nextBtn.classList.add('hidden');
+        }
+
+        /* 팝업 표시 */
         successPopup.classList.remove('hidden');
+
+        /* clearText 순차 출력 — 완료 후 다음으로 버튼 페이드인 */
+        animateStoryDesc(stage.clearText, popupText, () => {
+            if (nextBtn) {
+                nextBtn.style.opacity    = '0';
+                nextBtn.style.transform  = 'translateY(8px)';
+                nextBtn.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                nextBtn.classList.remove('hidden');
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    nextBtn.style.opacity   = '1';
+                    nextBtn.style.transform = 'translateY(0)';
+                }));
+            }
+        });
     } else {
         messageEl.innerText = '❌ 코드 불일치';
         messageEl.className = 'error';
